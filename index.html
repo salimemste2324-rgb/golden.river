@@ -5457,7 +5457,7 @@
 
       body.admin-mode .form-actions-sticky {
         position: sticky;
-        bottom: 12px;
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px));
         z-index: 5;
         display: flex;
         gap: 12px;
@@ -5480,7 +5480,7 @@
          bar keeps lining up with its own column (and works in RTL). */
       body.admin-mode .form-actions-sticky.is-docked {
         position: fixed;
-        bottom: 14px;
+        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
         left: var(--dock-left, 16px);
         width: var(--dock-width, calc(100% - 32px));
         z-index: 60;
@@ -5495,8 +5495,8 @@
         body.admin-mode .form-step-titles p { font-size: .74rem; }
         body.admin-mode .lang-tab { padding: 7px 11px; font-size: .78rem; }
         body.admin-mode .switch-grid { grid-template-columns: 1fr; }
-        body.admin-mode .form-actions-sticky { bottom: 8px; }
-        body.admin-mode .form-actions-sticky.is-docked { bottom: 10px; }
+        body.admin-mode .form-actions-sticky { bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+        body.admin-mode .form-actions-sticky.is-docked { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
         body.admin-mode .form-actions-sticky > button { flex: 1 1 100%; width: 100%; }
       }
 
@@ -6851,7 +6851,7 @@
                     </div>
                   </div>
 
-                  <div class="form-actions form-actions-sticky mt-4">
+                  <div class="form-actions mt-4">
                     <button type="submit" class="premium-btn"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="saveProductButton">Save product</span></button>
                     <button type="button" id="cancelProductEditBtn" class="outline-btn" data-i18n="cancelButton">Cancel</button>
                   </div>
@@ -7165,12 +7165,19 @@
           ledger: 'zakho-menu-sync-ledger',
         };
 
-        // The menu ships empty. The 11 sample dishes and 7 sample categories that
-        // used to live here are gone on purpose — the first thing a customer should
-        // see is whatever the owner adds from the admin panel, not demo food.
-        // LEGACY_DEMO_* below is only used to clean sample items out of a device's
-        // old localStorage copy; nothing here renders them.
+        // The menu ships without sample dishes. Legacy product ids below are only
+        // used to clean previously seeded items out of saved menu data.
         const LEGACY_DEMO_PRODUCT_IDS = ['p-001','p-002','p-003','p-004','p-005','p-006','p-007','p-008','p-009','p-010','p-011'];
+        const LEGACY_WESTERN_DISH_IDS = [
+          'crispy-fish-platter', 'chicken-sizzling-plate', 'steak-platter', 'shrimp-skillet',
+          'creamy-spinach', 'crispy-fish-bites', 'beef-mushroom-skillet', 'braised-beef',
+          'seasoned-fries', 'sizzling-beef', 'onion-rings', 'crispy-chicken-strips',
+          'beef-tongue', 'beef-rice-platter', 'grilled-meat-bites', 'grilled-chicken',
+          'chicken-with-cream-sauce', 'crispy-shrimp-cup', 'creamy-chicken-mushroom',
+          'beef-mushroom-cream', 'grilled-chicken-vegetables', 'steak-creamy-mushroom',
+          'steak-bbq-sauce', 'shrimp-salad', 'steak-mushroom-sauce', 'grilled-whole-fish',
+          'grilled-salmon', 'crispy-fish-fillet',
+        ];
         const LEGACY_DEMO_CATEGORY_IDS = ['starters','grill','mains','pizza','desserts','drinks','shisha'];
         const LEGACY_BADINI_CATEGORY_NAMES = {
           'western-food': 'Xwarinên rojavayî',
@@ -7181,7 +7188,7 @@
         };
 
         const defaultData = {
-          version: 12,
+          version: 13,
           settings: {
             restaurantName: 'Golden River',
             logo: 'Golden River',
@@ -7263,52 +7270,6 @@
           ],
           products: [],
         };
-
-        const westernDishCatalog = [
-          ['crispy-fish-platter', 'Crispy Fish Platter', 'طبق سمك مقرمش', 'Masiyê pûçker', 'Çıtır Balık Tabağı', 'images/western/crispy-fish-platter.jpeg', 'Crispy fish with vegetables, lemon, and house sauces.'],
-          ['chicken-sizzling-plate', 'Chicken Sizzling Plate', 'دجاج على الصاج', 'Mirîşk li ser sacê', 'Tavuk Sahan', 'images/western/chicken-sizzling-plate.jpeg', 'Sizzling chicken with peppers, onions, and vegetables.'],
-          ['steak-platter', 'Steak Platter', 'طبق ستيك', 'Platera steak', 'Biftek Tabağı', 'images/western/steak-platter.jpeg', 'Grilled steak served with vegetables and sauce.'],
-          ['shrimp-skillet', 'Shrimp Skillet', 'روبيان على الطريقة الغربية', 'Shrimpê skillet', 'Karides Tava', 'images/western/shrimp-skillet.jpeg', 'Shrimp cooked with vegetables and a rich sauce.'],
-          ['creamy-spinach', 'Creamy Spinach', 'سبانخ بالكريمة', 'Ispanax bi cream', 'Kremalı Ispanak', 'images/western/creamy-spinach.jpeg', 'Creamy spinach baked and served warm.'],
-          ['crispy-fish-bites', 'Crispy Fish Bites', 'قطع سمك مقرمشة', 'Parçeyên masiyê pûçker', 'Çıtır Balık Lokmaları', 'images/western/crispy-fish-bites.jpeg', 'Golden fried fish pieces with lemon.'],
-          ['beef-mushroom-skillet', 'Beef & Mushroom Skillet', 'لحم بالفطر على الصاج', 'Guh bi mushroom li ser sacê', 'Mantarlı Dana Tava', 'images/western/beef-mushroom-skillet.jpeg', 'Beef and mushrooms sautéed with onions.'],
-          ['braised-beef', 'Braised Beef', 'لحم مطهو ببطء', 'Guhê hêdî pijandî', 'Ağır Ateşte Dana Eti', 'images/western/braised-beef.jpeg', 'Tender slow-cooked beef in a savory sauce.'],
-          ['seasoned-fries', 'Seasoned Fries', 'بطاطس متبلة', 'Potato bi baharat', 'Baharatlı Patates Kızartması', 'images/western/seasoned-fries.jpeg', 'Crispy seasoned fries served with dipping sauces.'],
-          ['sizzling-beef', 'Sizzling Beef', 'لحم بقري على الصاج', 'Guhê beef li ser sacê', 'Cızırdayan Dana Eti', 'images/western/sizzling-beef.jpeg', 'Sizzling beef with peppers, onions, and vegetables.'],
-          ['onion-rings', 'Onion Rings', 'حلقات البصل', 'Xelekên pîvazê', 'Soğan Halkaları', 'images/western/onion-rings.jpeg', 'Crispy battered onion rings served with fries and dips.'],
-          ['crispy-chicken-strips', 'Crispy Chicken Strips', 'شرائح دجاج مقرمشة', 'Parçeyên mirîşkê pûçker', 'Çıtır Tavuk Şeritleri', 'images/western/crispy-chicken-strips.jpeg', 'Breaded chicken strips with fries and dipping sauces.'],
-          ['beef-tongue', 'Beef Tongue', 'لسان بقري', 'Zimanê beef', 'Dana Dili', 'images/western/beef-tongue.jpeg', 'Sliced beef tongue served with garlic and lemon.'],
-          ['beef-rice-platter', 'Beef & Rice Platter', 'طبق لحم وأرز', 'Platera guh û birincê', 'Etli Pilav Tabağı', 'images/western/beef-rice-platter.jpeg', 'Beef with rice and seasonal vegetables.'],
-          ['grilled-meat-bites', 'Grilled Meat Bites', 'قطع لحم مشوية', 'Parçeyên guhê grielkîrî', 'Izgara Et Lokmaları', 'images/western/grilled-meat-bites.jpeg', 'Grilled bite-sized meat served hot.'],
-          ['grilled-chicken', 'Grilled Chicken Breast', 'صدر دجاج مشوي', 'Sînga mirîşkê grielkîrî', 'Izgara Tavuk Göğsü', 'images/western/grilled-chicken.jpeg', 'Grilled chicken breast with vegetables and sauce.'],
-          ['chicken-with-cream-sauce', 'Chicken with Cream Sauce', 'دجاج بصلصة كريمية', 'Mirîşk bi sosê cream', 'Kremalı Soslu Tavuk', 'images/western/chicken-with-cream-sauce.jpeg', 'Grilled chicken served with a creamy sauce.'],
-          ['crispy-shrimp-cup', 'Crispy Shrimp', 'روبيان مقرمش', 'Shrimpê pûçker', 'Çıtır Karides', 'images/western/crispy-shrimp-cup.jpeg', 'Crispy fried shrimp served with fresh salad.'],
-          ['creamy-chicken-mushroom', 'Creamy Chicken & Mushroom', 'دجاج بالفطر والكريمة', 'Mirîşk û mushroom bi cream', 'Kremalı Mantarlı Tavuk', 'images/western/creamy-chicken-mushroom.jpeg', 'Chicken and mushrooms in a creamy sauce.'],
-          ['beef-mushroom-cream', 'Beef & Mushroom Cream', 'لحم بالفطر والكريمة', 'Guh û mushroom bi cream', 'Kremalı Mantarlı Dana Eti', 'images/western/beef-mushroom-cream.jpeg', 'Beef and mushrooms in a creamy sauce, served with rice.'],
-          ['grilled-chicken-vegetables', 'Grilled Chicken & Vegetables', 'دجاج مشوي مع الخضار', 'Mirîşkê grielkîrî bi sebzeyan', 'Izgara Tavuk ve Sebzeler', 'images/western/grilled-chicken-vegetables.jpeg', 'Grilled chicken with seasonal vegetables and sides.'],
-          ['steak-creamy-mushroom', 'Steak with Creamy Mushroom Sauce', 'ستيك بصلصة الفطر الكريمية', 'Steak bi sosê mushroom cream', 'Kremalı Mantar Soslu Biftek', 'images/western/steak-creamy-mushroom.jpeg', 'Grilled steak topped with creamy mushroom sauce.'],
-          ['steak-bbq-sauce', 'Steak with BBQ Sauce', 'ستيك بصلصة باربكيو', 'Steak bi sosê BBQ', 'Barbekü Soslu Biftek', 'images/western/steak-bbq-sauce.jpeg', 'Grilled steak served with smoky barbecue sauce.'],
-          ['shrimp-salad', 'Shrimp Salad', 'سلطة الروبيان', 'Salata shrimp', 'Karides Salatası', 'images/western/shrimp-salad.jpeg', 'Shrimp with fresh greens, citrus, and tomatoes.'],
-          ['steak-mushroom-sauce', 'Steak with Mushroom Sauce', 'ستيك بصلصة الفطر', 'Steak bi sosê mushroom', 'Mantar Soslu Biftek', 'images/western/steak-mushroom-sauce.jpeg', 'Grilled steak served with mushroom sauce and vegetables.'],
-          ['grilled-whole-fish', 'Grilled Whole Fish', 'سمكة كاملة مشوية', 'Masiyê tevahî yê grielkîrî', 'Izgara Bütün Balık', 'images/western/grilled-whole-fish.jpeg', 'Whole grilled fish served with vegetables and sauces.'],
-          ['grilled-salmon', 'Grilled Salmon', 'سلمون مشوي', 'Salmona grielkîrî', 'Izgara Somon', 'images/western/grilled-salmon.jpeg', 'Grilled salmon with vegetables and sauce.'],
-          ['crispy-fish-fillet', 'Crispy Fish Fillet', 'فيليه سمك مقرمش', 'Fileta masiyê pûçker', 'Çıtır Balık Fileto', 'images/western/crispy-fish-fillet.jpeg', 'Crispy fish fillet served with vegetables, lemon, and sauces.'],
-        ].map(([id, nameEn, nameAr, nameBad, nameTr, image, description], index) => ({
-          id,
-          categoryId: 'western-food',
-          name: { en: nameEn, ar: nameAr, bad: nameBad, tr: nameTr },
-          description: {},
-          price: null,
-          discount: 0,
-          available: true,
-          featured: false,
-          popular: false,
-          new: false,
-          order: index + 1,
-          image,
-        }));
-
-        defaultData.products = westernDishCatalog;
 
         const state = {
           lang: 'en',
@@ -8015,7 +7976,7 @@
         const toCurrency = value => Number(value) > 0
           ? `${Number(value).toLocaleString('en-US')} ${state.data.settings.currency}`
           : '—';
-        let purgedDemoItemCount = 0;
+        let purgedLegacyProductCount = 0;
         const getParsedData = (source) => {
           try {
             const raw = typeof source === 'string' ? source : (source && typeof source === 'object' ? source : localStorage.getItem(STORAGE_KEYS.data));
@@ -8046,7 +8007,7 @@
                 return !LEGACY_DEMO_CATEGORY_IDS.includes(category.id) || usedCategoryIds.has(category.id);
               });
               if (purgedProducts.length !== products.length || purgedCategories.length !== categories.length) {
-                purgedDemoItemCount = products.length - purgedProducts.length;
+                purgedLegacyProductCount += products.length - purgedProducts.length;
               }
               products.length = 0;
               products.push(...purgedProducts);
@@ -8127,20 +8088,19 @@
                 categories.push(categoryToAdd);
               }
             }
-            if (storedVersion < 11) {
-              westernDishCatalog.forEach(product => {
-                if (!products.some(existing => existing.id === product.id)) {
-                  products.push(structuredClone(product));
-                }
-              });
-            }
             if (storedVersion < 12) {
               products.forEach(product => {
                 product.description = {};
               });
             }
+            if (storedVersion < 13) {
+              const remainingProducts = products.filter(product => !LEGACY_WESTERN_DISH_IDS.includes(product && product.id));
+              purgedLegacyProductCount += products.length - remainingProducts.length;
+              products.length = 0;
+              products.push(...remainingProducts);
+            }
             return {
-              version: 12,
+              version: 13,
               settings: { ...defaultData.settings, ...(parsed.settings || {}) },
               categories,
               products,
@@ -8491,7 +8451,7 @@
               // JSON.stringify, and the object it turns into would have been written
               // to the document as a plain map instead of a server timestamp.
               const buildPayload = () => {
-                const payload = JSON.parse(JSON.stringify({ ...state.data, version: 12 }));
+                const payload = JSON.parse(JSON.stringify({ ...state.data, version: 13 }));
                 payload.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
                 return payload;
               };
@@ -9885,11 +9845,9 @@
           syncDockedActionBars();
         };
 
-        // ---- Save/Cancel bar that stays frozen at the bottom of the screen ----
-        // CSS sticky alone is not enough: the bar is the form's last child, so it
-        // let go as soon as the form's bottom edge reached the viewport. Docking it
-        // keeps Save reachable the whole time a product or category form is open.
-        const DOCK_FORMS = ['productForm', 'categoryForm'];
+        // Keep category actions docked while editing; product actions stay in the
+        // form flow directly after the labels so they scroll with the page.
+        const DOCK_FORMS = ['categoryForm'];
 
         const undockForm = form => {
           const bar = form.querySelector('.form-actions-sticky');
@@ -9903,7 +9861,9 @@
             DOCK_FORMS.forEach(id => { const f = document.getElementById(id); if (f) undockForm(f); });
             return;
           }
-          const vh = window.innerHeight;
+          const viewport = window.visualViewport;
+          const viewportTop = viewport ? viewport.offsetTop : 0;
+          const vh = viewport ? viewport.height + viewportTop : window.innerHeight;
           let chosen = null;
           DOCK_FORMS.forEach(id => {
             const form = document.getElementById(id);
@@ -9914,7 +9874,7 @@
             const open = Boolean(panel && panel.classList.contains('active')) && form.offsetParent !== null;
             const rect = form.getBoundingClientRect();
             // Keep it docked for as long as the form still has fields on screen.
-            const onScreen = open && rect.top < vh - 170 && rect.bottom > 170;
+            const onScreen = open && rect.top < vh - 170 && rect.bottom > viewportTop + 170;
             if (!onScreen) { undockForm(form); return; }
             if (!chosen || rect.top < chosen.top) chosen = { form, bar, top: rect.top, rect };
           });
@@ -9948,6 +9908,10 @@
         window.addEventListener('scroll', requestDockSync, { passive: true });
         window.addEventListener('resize', requestDockSync);
         document.addEventListener('click', requestDockSync, true);
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', requestDockSync);
+          window.visualViewport.addEventListener('scroll', requestDockSync);
+        }
 
         const showToast = (title, text, icon = 'success') => {
           Swal.fire({
@@ -10257,7 +10221,7 @@
           }).then(result => {
             if (!result.isConfirmed) return;
             state.data = { ...structuredClone(defaultData), settings: state.data.settings };
-            purgedDemoItemCount = 0;
+            purgedLegacyProductCount = 0;
             saveData();
             applyLanguage();
             renderMenu();
@@ -10700,10 +10664,9 @@
           // Must run before startCloudSync() so Firebase picks up the right config.
           loadSavedIntegrationKeys();
 
-          // getParsedData() stripped the old sample dishes out of this device's saved
-          // copy. Persist that locally — deliberately without saveData(), because a
-          // visitor's browser must never push a cleanup into the shared cloud document.
-          if (purgedDemoItemCount > 0) {
+          // Persist menu migrations locally without saveData(); visitor browsers must
+          // never push cleanup to the shared cloud document.
+          if (purgedLegacyProductCount > 0) {
             try { localStorage.setItem(STORAGE_KEYS.data, JSON.stringify(state.data)); } catch (e) {}
           }
 
