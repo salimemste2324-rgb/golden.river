@@ -8081,6 +8081,7 @@
               confirmButtonText: 'Okay',
             });
           }
+          updateSyncHint();
           // Only work done in the admin panel counts as "mine until the cloud says
           // otherwise" — a visitor's browser must never claim the shared document.
           if (state.adminLoggedIn) markLedgerDirty();
@@ -8192,8 +8193,8 @@
           timeout:      { label: 'No answer from Firestore',      dot: '#E06A5A', hint: () => 'The Cloud Firestore API is not switched on for this project yet. Open console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=' + ((window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId) || 'your-project-id') + ', press Enable, wait a minute, then reload this page.' },
           pending:      { label: 'Edits pending upload',          dot: '#E0A63C', hint: 'Saved on this device, but Firestore has not confirmed them yet. Check the connection — or that the database exists in this Firebase project.' },
           unsynced:     { label: () => { const n = unsyncedCount(); return n ? n + (n === 1 ? ' change not online yet' : ' changes not online yet') : 'Edits not online yet'; }, dot: '#E0A63C', hint: 'These dishes or categories are safe on this device, but the online menu has not accepted them. They are retried automatically and the cloud copy will never delete them.' },
-          toobig:       { label: 'Photos too large to sync',      dot: '#E06A5A', hint: 'The menu data is over the 1 MB Firestore document limit. Remove some dishes or use smaller photos.' },
-          shrunk:       { label: 'Live — photos auto-shrunk',     dot: '#2FBF8F', hint: 'Online. Oversized pictures were compressed so the menu fits the 1 MB Firestore document. Upload smaller photos later if you want them sharper.' },
+          toobig:       { label: 'Menu still too large to sync',  dot: '#E06A5A', hint: 'Photos were auto-compressed, but this menu still exceeds the safe Firestore document size. Use fewer or smaller photos.' },
+          shrunk:       { label: 'Live — photos auto-shrunk',     dot: '#2FBF8F', hint: 'Online. Photos were automatically compressed to fit the Firestore document limit.' },
           offline:      { label: 'No internet — saved on device', dot: '#E0A63C', hint: 'Your edits stay on this device until the connection returns.' },
         };
 
@@ -8205,17 +8206,26 @@
           chip.style.display = 'flex';
           const dot = document.getElementById('syncStatusDot');
           const label = document.getElementById('syncStatusLabel');
-          const hint = document.getElementById('syncStatusHint');
           if (dot) dot.style.color = config.dot;
           // Some labels count things, so they are functions evaluated at paint time.
           if (label) label.textContent = typeof config.label === 'function' ? config.label() : config.label;
-          if (hint) {
-            const hintText = typeof config.hint === 'function' ? config.hint() : config.hint;
-            hint.textContent = hintText;
-            hint.style.display = hintText ? 'block' : 'none';
-          }
+          updateSyncHint();
           chip.title = typeof config.hint === 'function' ? config.hint() : (config.hint || config.label);
           renderAdminIdentity();
+        };
+
+        const updateSyncHint = () => {
+          const hint = document.getElementById('syncStatusHint');
+          if (!hint) return;
+          const config = SYNC_STATES[state.syncStatus] || SYNC_STATES.off;
+          const baseHint = typeof config.hint === 'function' ? config.hint() : config.hint;
+          const bytes = new Blob([JSON.stringify(state.data)]).size;
+          const size = bytes >= 1024 * 1024
+            ? `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+            : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+          const estimate = `Estimated menu data: ${size} / 900 KB safe publish target`;
+          hint.textContent = [baseHint, estimate].filter(Boolean).join(' · ');
+          hint.style.display = 'block';
         };
 
         const describeCloudError = error => {
@@ -8340,15 +8350,16 @@
           return count;
         };
 
-        // Last resort before the 1 MB guard refuses a publish: re-encode the photos in
-        // the copy being sent until the document fits. Only ever applied to items whose
-        // picture is already far past the per-photo budget, and the smaller version
-        // comes back to this device on the next snapshot, so the menu converges.
-        const SHRINK_PASSES = [[640, 0.55], [520, 0.48], [420, 0.42], [320, 0.36]];
+        // Compress existing base64 photos in the outgoing copy when total menu data
+        // approaches the Firestore document limit. The server snapshot then updates
+        // this device with the smaller images.
+        const SHRINK_PASSES = [[1000, 0.72], [800, 0.62], [640, 0.52], [480, 0.42], [360, 0.34], [280, 0.28]];
+        const AUTO_COMPRESS_THRESHOLD_BYTES = 750000;
+        const SAFE_MENU_DOCUMENT_BYTES = 900000;
 
-        const shrinkPhoto = dataUrl => new Promise(resolve => {
+        const shrinkPhoto = (dataUrl, targetChars) => new Promise(resolve => {
           const source = String(dataUrl || '');
-          if (!source.startsWith('data:image/') || source.length <= IMAGE_BUDGET_CHARS) { resolve(source); return; }
+          if (!source.startsWith('data:image/')) { resolve(source); return; }
           const img = new Image();
           img.onload = () => {
             let smallest = source;
@@ -8356,7 +8367,7 @@
               try {
                 const encoded = encodeImageAt(img, maxWidth, quality);
                 if (encoded && encoded.length < smallest.length) smallest = encoded;
-                if (encoded && encoded.length <= IMAGE_BUDGET_CHARS) { smallest = encoded; break; }
+                if (encoded && encoded.length <= targetChars) { smallest = encoded; break; }
               } catch (e) { break; }
             }
             resolve(smallest);
@@ -8366,15 +8377,18 @@
         });
 
         const shrinkPhotosToFit = async payload => {
-          const jobs = [];
+          const images = [];
           ['products', 'categories'].forEach(field => {
             (payload[field] || []).forEach(item => {
-              if (item && typeof item.image === 'string' && item.image.length > IMAGE_BUDGET_CHARS) {
-                jobs.push(shrinkPhoto(item.image).then(small => { item.image = small; }));
-              }
+              if (item && typeof item.image === 'string' && item.image.startsWith('data:image/')) images.push(item);
             });
           });
-          if (jobs.length) await Promise.all(jobs);
+          images.sort((a, b) => b.image.length - a.image.length);
+          const targetChars = Math.max(24000, Math.min(72000, Math.floor(AUTO_COMPRESS_THRESHOLD_BYTES * 0.65 / Math.max(images.length, 1))));
+          for (const item of images) {
+            if (new Blob([JSON.stringify({ ...payload, updatedAt: 0 })]).size <= AUTO_COMPRESS_THRESHOLD_BYTES) break;
+            item.image = await shrinkPhoto(item.image, targetChars);
+          }
           return payload;
         };
 
@@ -8403,25 +8417,23 @@
               };
               let payload = buildPayload();
               // JSON.stringify ignores the sentinel, so measure the data itself.
-              const sizeOf = obj => JSON.stringify({ ...obj, updatedAt: 0 }).length;
+              const sizeOf = obj => new Blob([JSON.stringify({ ...obj, updatedAt: 0 })]).size;
               let size = sizeOf(payload);
-              if (size > 900000) {
-                // The document is full because some photo inside it is huge — usually
-                // one saved before photos were compressed. Shrink those and try again,
-                // otherwise the guard silently blocks every publish forever.
+              if (size > AUTO_COMPRESS_THRESHOLD_BYTES) {
+                // Compress base64 photos across the whole menu before the Firestore
+                // document reaches its safe publish target.
                 const sizeBeforeShrink = size;
                 payload = await shrinkPhotosToFit(payload);
                 size = sizeOf(payload);
-                // shrinkPhotosToFit edits in place, so measure rather than compare refs.
                 if (size < sizeBeforeShrink) photosWereShrunk = true;
               }
-              if (size > 900000) {
+              if (size > SAFE_MENU_DOCUMENT_BYTES) {
                 // Do not just dim the chip: a skipped push used to look like a saved
                 // dish, and the next remote snapshot then quietly dropped it again.
                 // The ledger keeps the work safe on this device until it can go out.
                 setSyncState('toobig');
-                showToast('Not published — menu too large', "Saved on this device, but the menu is over the ~1 MB Firestore limit. Use smaller photos or remove dishes.", 'warning');
-                console.warn('[Zakho Menu] Menu is ~' + Math.round(size / 1024) + 'KB, over the ~1MB Firestore limit — use smaller photos or remove dishes.');
+                showToast('Not published — menu too large', `Saved on this device, but the estimated menu size is ${Math.round(size / 1024)} KB after photo compression. Use fewer or smaller photos.`, 'warning');
+                console.warn('[Zakho Menu] Menu is ~' + Math.round(size / 1024) + 'KB after photo compression, over the safe Firestore document limit.');
                 return;
               }
               const confirmedIds = { products: payload.products, categories: payload.categories };
@@ -9866,7 +9878,7 @@
         // at ~1 MiB — 3 or 4 camera shots at 1200px/0.82 blew past the 900 KB guard, the
         // push was skipped, and the dish never reached the cloud. So keep shrinking until
         // the encoded image fits its share of the budget.
-        const IMAGE_BUDGET_CHARS = 240000;
+        const IMAGE_BUDGET_CHARS = 120000;
         const IMAGE_PASSES = [[1200, 0.82], [1000, 0.74], [860, 0.66], [720, 0.58], [600, 0.5]];
 
         const encodeImageAt = (img, maxWidth, quality) => {
@@ -9950,7 +9962,7 @@
               previewNode.src = imgbbUrl;
               state[targetStateKey] = imgbbUrl;
               setPhotoStatus(input.id, translate('photoHosted'));
-              showToast('Image uploaded', 'Image hosted on ImgBB — no storage limit!', 'success');
+              showToast('Image uploaded', 'Image hosted on ImgBB, so it does not count toward the Firestore menu document size.', 'success');
             } else {
               setPhotoStatus(input.id, translate('photoLocal'));
             }
