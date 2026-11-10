@@ -1,0 +1,12 @@
+# Local-only copy of the menu before the gold redesign (282 KB, dead code,
+# and its old login form has a demo password pre-filled in the markup).
+index.backup-before-gold-theme.html
+
+# Firebase CLI artifacts
+.firebase/
+firebase-debug.log
+
+# Logs / OS noise
+*.log
+.DS_Store
+Thumbs.db
