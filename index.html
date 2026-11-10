@@ -1101,6 +1101,13 @@
         margin-top: 18px;
       }
 
+      .product-row-thumbnail {
+        width: 52px;
+        height: 42px;
+        border-radius: 8px;
+        object-fit: cover;
+      }
+
       table {
         width: 100%;
         border-collapse: collapse;
@@ -6858,6 +6865,7 @@
                     <thead>
                       <tr>
                         <th data-i18n="tableName">Name</th>
+                        <th data-i18n="tablePhoto">Photo</th>
                         <th data-i18n="tableCategory">Category</th>
                         <th data-i18n="tablePrice">Price</th>
                         <th data-i18n="tableStatus">Status</th>
@@ -7173,7 +7181,7 @@
         };
 
         const defaultData = {
-          version: 10,
+          version: 12,
           settings: {
             restaurantName: 'Golden River',
             logo: 'Golden River',
@@ -7255,6 +7263,52 @@
           ],
           products: [],
         };
+
+        const westernDishCatalog = [
+          ['crispy-fish-platter', 'Crispy Fish Platter', 'طبق سمك مقرمش', 'Masiyê pûçker', 'Çıtır Balık Tabağı', 'images/western/crispy-fish-platter.jpeg', 'Crispy fish with vegetables, lemon, and house sauces.'],
+          ['chicken-sizzling-plate', 'Chicken Sizzling Plate', 'دجاج على الصاج', 'Mirîşk li ser sacê', 'Tavuk Sahan', 'images/western/chicken-sizzling-plate.jpeg', 'Sizzling chicken with peppers, onions, and vegetables.'],
+          ['steak-platter', 'Steak Platter', 'طبق ستيك', 'Platera steak', 'Biftek Tabağı', 'images/western/steak-platter.jpeg', 'Grilled steak served with vegetables and sauce.'],
+          ['shrimp-skillet', 'Shrimp Skillet', 'روبيان على الطريقة الغربية', 'Shrimpê skillet', 'Karides Tava', 'images/western/shrimp-skillet.jpeg', 'Shrimp cooked with vegetables and a rich sauce.'],
+          ['creamy-spinach', 'Creamy Spinach', 'سبانخ بالكريمة', 'Ispanax bi cream', 'Kremalı Ispanak', 'images/western/creamy-spinach.jpeg', 'Creamy spinach baked and served warm.'],
+          ['crispy-fish-bites', 'Crispy Fish Bites', 'قطع سمك مقرمشة', 'Parçeyên masiyê pûçker', 'Çıtır Balık Lokmaları', 'images/western/crispy-fish-bites.jpeg', 'Golden fried fish pieces with lemon.'],
+          ['beef-mushroom-skillet', 'Beef & Mushroom Skillet', 'لحم بالفطر على الصاج', 'Guh bi mushroom li ser sacê', 'Mantarlı Dana Tava', 'images/western/beef-mushroom-skillet.jpeg', 'Beef and mushrooms sautéed with onions.'],
+          ['braised-beef', 'Braised Beef', 'لحم مطهو ببطء', 'Guhê hêdî pijandî', 'Ağır Ateşte Dana Eti', 'images/western/braised-beef.jpeg', 'Tender slow-cooked beef in a savory sauce.'],
+          ['seasoned-fries', 'Seasoned Fries', 'بطاطس متبلة', 'Potato bi baharat', 'Baharatlı Patates Kızartması', 'images/western/seasoned-fries.jpeg', 'Crispy seasoned fries served with dipping sauces.'],
+          ['sizzling-beef', 'Sizzling Beef', 'لحم بقري على الصاج', 'Guhê beef li ser sacê', 'Cızırdayan Dana Eti', 'images/western/sizzling-beef.jpeg', 'Sizzling beef with peppers, onions, and vegetables.'],
+          ['onion-rings', 'Onion Rings', 'حلقات البصل', 'Xelekên pîvazê', 'Soğan Halkaları', 'images/western/onion-rings.jpeg', 'Crispy battered onion rings served with fries and dips.'],
+          ['crispy-chicken-strips', 'Crispy Chicken Strips', 'شرائح دجاج مقرمشة', 'Parçeyên mirîşkê pûçker', 'Çıtır Tavuk Şeritleri', 'images/western/crispy-chicken-strips.jpeg', 'Breaded chicken strips with fries and dipping sauces.'],
+          ['beef-tongue', 'Beef Tongue', 'لسان بقري', 'Zimanê beef', 'Dana Dili', 'images/western/beef-tongue.jpeg', 'Sliced beef tongue served with garlic and lemon.'],
+          ['beef-rice-platter', 'Beef & Rice Platter', 'طبق لحم وأرز', 'Platera guh û birincê', 'Etli Pilav Tabağı', 'images/western/beef-rice-platter.jpeg', 'Beef with rice and seasonal vegetables.'],
+          ['grilled-meat-bites', 'Grilled Meat Bites', 'قطع لحم مشوية', 'Parçeyên guhê grielkîrî', 'Izgara Et Lokmaları', 'images/western/grilled-meat-bites.jpeg', 'Grilled bite-sized meat served hot.'],
+          ['grilled-chicken', 'Grilled Chicken Breast', 'صدر دجاج مشوي', 'Sînga mirîşkê grielkîrî', 'Izgara Tavuk Göğsü', 'images/western/grilled-chicken.jpeg', 'Grilled chicken breast with vegetables and sauce.'],
+          ['chicken-with-cream-sauce', 'Chicken with Cream Sauce', 'دجاج بصلصة كريمية', 'Mirîşk bi sosê cream', 'Kremalı Soslu Tavuk', 'images/western/chicken-with-cream-sauce.jpeg', 'Grilled chicken served with a creamy sauce.'],
+          ['crispy-shrimp-cup', 'Crispy Shrimp', 'روبيان مقرمش', 'Shrimpê pûçker', 'Çıtır Karides', 'images/western/crispy-shrimp-cup.jpeg', 'Crispy fried shrimp served with fresh salad.'],
+          ['creamy-chicken-mushroom', 'Creamy Chicken & Mushroom', 'دجاج بالفطر والكريمة', 'Mirîşk û mushroom bi cream', 'Kremalı Mantarlı Tavuk', 'images/western/creamy-chicken-mushroom.jpeg', 'Chicken and mushrooms in a creamy sauce.'],
+          ['beef-mushroom-cream', 'Beef & Mushroom Cream', 'لحم بالفطر والكريمة', 'Guh û mushroom bi cream', 'Kremalı Mantarlı Dana Eti', 'images/western/beef-mushroom-cream.jpeg', 'Beef and mushrooms in a creamy sauce, served with rice.'],
+          ['grilled-chicken-vegetables', 'Grilled Chicken & Vegetables', 'دجاج مشوي مع الخضار', 'Mirîşkê grielkîrî bi sebzeyan', 'Izgara Tavuk ve Sebzeler', 'images/western/grilled-chicken-vegetables.jpeg', 'Grilled chicken with seasonal vegetables and sides.'],
+          ['steak-creamy-mushroom', 'Steak with Creamy Mushroom Sauce', 'ستيك بصلصة الفطر الكريمية', 'Steak bi sosê mushroom cream', 'Kremalı Mantar Soslu Biftek', 'images/western/steak-creamy-mushroom.jpeg', 'Grilled steak topped with creamy mushroom sauce.'],
+          ['steak-bbq-sauce', 'Steak with BBQ Sauce', 'ستيك بصلصة باربكيو', 'Steak bi sosê BBQ', 'Barbekü Soslu Biftek', 'images/western/steak-bbq-sauce.jpeg', 'Grilled steak served with smoky barbecue sauce.'],
+          ['shrimp-salad', 'Shrimp Salad', 'سلطة الروبيان', 'Salata shrimp', 'Karides Salatası', 'images/western/shrimp-salad.jpeg', 'Shrimp with fresh greens, citrus, and tomatoes.'],
+          ['steak-mushroom-sauce', 'Steak with Mushroom Sauce', 'ستيك بصلصة الفطر', 'Steak bi sosê mushroom', 'Mantar Soslu Biftek', 'images/western/steak-mushroom-sauce.jpeg', 'Grilled steak served with mushroom sauce and vegetables.'],
+          ['grilled-whole-fish', 'Grilled Whole Fish', 'سمكة كاملة مشوية', 'Masiyê tevahî yê grielkîrî', 'Izgara Bütün Balık', 'images/western/grilled-whole-fish.jpeg', 'Whole grilled fish served with vegetables and sauces.'],
+          ['grilled-salmon', 'Grilled Salmon', 'سلمون مشوي', 'Salmona grielkîrî', 'Izgara Somon', 'images/western/grilled-salmon.jpeg', 'Grilled salmon with vegetables and sauce.'],
+          ['crispy-fish-fillet', 'Crispy Fish Fillet', 'فيليه سمك مقرمش', 'Fileta masiyê pûçker', 'Çıtır Balık Fileto', 'images/western/crispy-fish-fillet.jpeg', 'Crispy fish fillet served with vegetables, lemon, and sauces.'],
+        ].map(([id, nameEn, nameAr, nameBad, nameTr, image, description], index) => ({
+          id,
+          categoryId: 'western-food',
+          name: { en: nameEn, ar: nameAr, bad: nameBad, tr: nameTr },
+          description: {},
+          price: null,
+          discount: 0,
+          available: true,
+          featured: false,
+          popular: false,
+          new: false,
+          order: index + 1,
+          image,
+        }));
+
+        defaultData.products = westernDishCatalog;
 
         const state = {
           lang: 'en',
@@ -7365,6 +7419,7 @@
             cancelButton: 'Cancel',
             productListTitle: 'Current menu',
             tableName: 'Name',
+            tablePhoto: 'Photo',
             tableIcon: 'Icon',
             tableCategory: 'Category',
             tablePrice: 'Price',
@@ -7539,6 +7594,7 @@
             cancelButton: 'إلغاء',
             productListTitle: 'القائمة الحالية',
             tableName: 'الاسم',
+            tablePhoto: 'الصورة',
             tableIcon: 'الأيقونة',
             tableCategory: 'الفئة',
             tablePrice: 'السعر',
@@ -7707,6 +7763,7 @@
             cancelButton: 'هەڵوەشاندن',
             productListTitle: 'لیستەیا ئێستا',
             tableName: 'ناڤ',
+            tablePhoto: 'وێنە',
             tableIcon: 'نیشانە',
             tableCategory: 'بەش',
             tablePrice: 'بها',
@@ -7875,6 +7932,7 @@
             cancelButton: 'İptal',
             productListTitle: 'Mevcut menü',
             tableName: 'Ad',
+            tablePhoto: 'Fotoğraf',
             tableIcon: 'Simge',
             tableCategory: 'Kategori',
             tablePrice: 'Fiyat',
@@ -7954,7 +8012,9 @@
           },
         };
 
-        const toCurrency = value => `${Number(value).toLocaleString('en-US')} ${state.data.settings.currency}`;
+        const toCurrency = value => Number(value) > 0
+          ? `${Number(value).toLocaleString('en-US')} ${state.data.settings.currency}`
+          : '—';
         let purgedDemoItemCount = 0;
         const getParsedData = (source) => {
           try {
@@ -8067,8 +8127,20 @@
                 categories.push(categoryToAdd);
               }
             }
+            if (storedVersion < 11) {
+              westernDishCatalog.forEach(product => {
+                if (!products.some(existing => existing.id === product.id)) {
+                  products.push(structuredClone(product));
+                }
+              });
+            }
+            if (storedVersion < 12) {
+              products.forEach(product => {
+                product.description = {};
+              });
+            }
             return {
-              version: 10,
+              version: 12,
               settings: { ...defaultData.settings, ...(parsed.settings || {}) },
               categories,
               products,
@@ -8419,7 +8491,7 @@
               // JSON.stringify, and the object it turns into would have been written
               // to the document as a plain map instead of a server timestamp.
               const buildPayload = () => {
-                const payload = JSON.parse(JSON.stringify({ ...state.data, version: 10 }));
+                const payload = JSON.parse(JSON.stringify({ ...state.data, version: 12 }));
                 payload.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
                 return payload;
               };
@@ -8508,6 +8580,7 @@
             if (!meta.fromCache) { cloudGotAnswer = true; clearTimeout(connectTimer); }
             if (snapshot.exists) {
               const remote = snapshot.data();
+              const remoteVersion = Number(remote.version) || 0;
               delete remote.updatedAt;
               // Anything this device created or edited since the cloud last confirmed
               // is only real here — the ledger knows which ids those are. A snapshot is
@@ -8541,6 +8614,7 @@
               refreshAllFromData();
               applyingRemote = false;
               cloudSeeded = true;
+              if (!meta.fromCache && remoteVersion < state.data.version && isCloudAdmin()) pushToCloud();
               // If this device still has unconfirmed work and it is allowed to write,
               // publish it now — that is how an edit made while offline or before the
               // rules were published finally reaches the menu without another save.
@@ -9216,6 +9290,10 @@
           const categoryName = category ? getCategoryName(category) : '';
           const modalImage = document.getElementById('modalImage');
           modalImage.alt = title;
+          modalImage.onerror = () => {
+            modalImage.onerror = null;
+            modalImage.src = 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=85';
+          };
           modalImage.src = product.image || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=85';
           document.getElementById('modalTitle').textContent = title;
           document.getElementById('modalCategory').textContent = categoryName;
@@ -9436,6 +9514,7 @@
             return `
               <tr>
                 <td>${name}</td>
+                <td>${product.image ? `<img class="product-row-thumbnail" src="${product.image}" alt="${name}" loading="lazy" />` : '—'}</td>
                 <td>${category ? getCategoryName(category) : '-'}</td>
                 <td>${toCurrency(product.price)}</td>
                 <td>
