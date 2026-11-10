@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Golden River | Hotel &amp; Restaurant</title>
     <meta
       name="description"
@@ -12,7 +12,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-    <meta name="theme-color" content="#193A3D" />
+    <meta name="theme-color" content="#112820" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -4303,7 +4303,11 @@
         flex-direction: column;
         justify-content: space-between;
         align-items: center;
-        padding: clamp(1.25rem, 4vh, 2rem) 1.5rem;
+        padding:
+          calc(clamp(1.25rem, 4vh, 2rem) + env(safe-area-inset-top, 0px))
+          calc(1.5rem + env(safe-area-inset-right, 0px))
+          calc(clamp(1.25rem, 4vh, 2rem) + env(safe-area-inset-bottom, 0px))
+          calc(1.5rem + env(safe-area-inset-left, 0px));
         min-height: 100vh;
         min-height: 100dvh;
         opacity: 1;
@@ -5032,7 +5036,11 @@
 
       @media (max-width: 640px) {
         .landing-overlay {
-          padding: 1.5rem 1rem;
+          padding:
+            calc(1.5rem + env(safe-area-inset-top, 0px))
+            calc(1rem + env(safe-area-inset-right, 0px))
+            calc(1.5rem + env(safe-area-inset-bottom, 0px))
+            calc(1rem + env(safe-area-inset-left, 0px));
         }
 
         .landing-logo-container {
@@ -5048,8 +5056,8 @@
         .landing-overlay {
           justify-content: flex-start;
           gap: 1.25rem;
-          padding-top: 1rem;
-          padding-bottom: 1rem;
+          padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+          padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
         }
 
         .landing-hero {
