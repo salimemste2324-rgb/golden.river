@@ -4027,14 +4027,6 @@
         border-radius: 12px;
       }
 
-      body.admin-mode #togglePasswordBtn {
-        min-width: 48px;
-        border-color: rgba(255, 255, 255, 0.12);
-        border-radius: 0 12px 12px 0;
-        background: rgba(255, 255, 255, 0.06);
-        color: #e9e4eb;
-      }
-
       body.admin-mode .admin-login-credentials {
         padding: 10px 12px;
         border: 1px solid rgba(255, 255, 255, 0.07);
@@ -6163,8 +6155,84 @@
         box-shadow: none;
       }
 
+      body.admin-mode .admin-login-header {
+        position: relative;
+        flex-direction: column;
+        gap: 7px;
+        padding: 30px 26px 8px;
+        text-align: center;
+      }
+
+      body.admin-mode .admin-login-logo {
+        width: 58px;
+        height: 58px;
+        margin-bottom: 5px;
+        object-fit: contain;
+        filter: drop-shadow(0 5px 15px rgba(198, 165, 104, .28));
+      }
+
+      body.admin-mode .admin-login-heading {
+        display: grid;
+        gap: 3px;
+      }
+
       body.admin-mode .admin-login-eyebrow {
-        color: var(--muted);
+        color: #E5D2A3;
+        letter-spacing: .16em;
+      }
+
+      body.admin-mode #adminLoginModal .modal-title {
+        font-family: 'Cormorant Garamond', Georgia, serif;
+        font-size: 2rem;
+        letter-spacing: .01em;
+      }
+
+      body.admin-mode #adminLoginModal .admin-login-header .btn-close {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+      }
+
+      body.admin-mode .admin-login-note {
+        padding: 12px 14px;
+        border: 1px solid rgba(198, 165, 104, .15);
+        border-radius: 12px;
+        background: rgba(198, 165, 104, .055);
+      }
+
+      body.admin-mode #adminLoginModal .form-control {
+        border: 1px solid rgba(255, 255, 255, .13);
+        background: rgba(255, 255, 255, .055);
+        color: #F5F0E6;
+      }
+
+      body.admin-mode #adminLoginModal .form-control:focus {
+        border-color: rgba(198, 165, 104, .72);
+        box-shadow: 0 0 0 .2rem rgba(198, 165, 104, .13);
+      }
+
+      body.admin-mode #adminLoginModal .form-control::placeholder {
+        color: rgba(245, 240, 230, .38);
+      }
+
+      body.admin-mode #loginSubmit {
+        letter-spacing: .02em;
+        transition: filter .2s ease, transform .2s ease, opacity .2s ease;
+      }
+
+      body.admin-mode #loginSubmit:hover:not(:disabled) {
+        filter: brightness(1.08);
+        transform: translateY(-1px);
+      }
+
+      body.admin-mode #loginSubmit:disabled {
+        cursor: wait;
+        opacity: .7;
+      }
+
+      body.admin-mode .admin-login-eyebrow {
+        color: #E5D2A3;
+        letter-spacing: .16em;
       }
 
       body.admin-mode .admin-login-note,
@@ -6612,43 +6680,24 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content admin-login-card">
           <div class="modal-header admin-login-header border-0 pb-0">
-            <span class="admin-login-mark" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>
-            <div>
-              <span class="admin-login-eyebrow">ZAKHO BISTRO · MANAGEMENT</span>
-              <h3 class="modal-title fs-4 mb-0" data-i18n="loginTitle">Admin Access</h3>
+            <img class="admin-login-logo" src="logo-mark.png" alt="" width="384" height="384" />
+            <div class="admin-login-heading">
+              <span class="admin-login-eyebrow">GOLDEN RIVER · HOTEL &amp; RESTAURANT</span>
+              <h3 class="modal-title fs-4 mb-0" data-i18n="loginTitle">Admin sign in</h3>
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body admin-login-body">
-            <div class="admin-login-note mb-3">
-              <span data-i18n="loginSecurityNote">
-                Sign-in is checked by Firebase Authentication — your password is never stored in this file and never appears in the page source.
-              </span>
-            </div>
             <div class="mb-3">
-              <label for="adminUsername" class="form-label" data-i18n="usernameLabel">Username or email</label>
-              <input id="adminUsername" class="form-control" type="email" autocomplete="username" placeholder="Enter email" />
+              <label for="adminUsername" class="form-label" data-i18n="usernameLabel">Admin email</label>
+              <input id="adminUsername" class="form-control" type="email" autocomplete="username" placeholder="Enter admin email" required />
             </div>
             <div class="mb-3">
               <label for="adminPassword" class="form-label" data-i18n="passwordLabel">Password</label>
-              <div class="input-group">
-                <input id="adminPassword" class="form-control" type="password" autocomplete="current-password" placeholder="Enter password" />
-                <button id="togglePasswordBtn" class="btn btn-outline-secondary" type="button" aria-label="Toggle password visibility">
-                  <i class="fa-solid fa-eye"></i>
-                </button>
-              </div>
+              <input id="adminPassword" class="form-control" type="password" autocomplete="current-password" placeholder="Enter password" required />
             </div>
             <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
-            <button id="loginSubmit" class="premium-btn w-100" data-i18n="loginButton">Login to dashboard</button>
-            <div id="offlinePassSetup" class="mt-3" style="display:none;">
-              <p style="font-size:.76rem;color:var(--muted);margin:0 0 8px;">
-                Firebase cannot be reached from this device right now. Set a backup passcode — it is stored as a hash inside this browser only, never in the file.
-              </p>
-              <div class="input-group">
-                <input id="offlinePassNew" class="form-control" type="password" autocomplete="new-password" placeholder="Backup passcode" />
-                <button id="saveOfflinePassBtn" class="btn btn-outline-secondary" type="button">Save</button>
-              </div>
-            </div>
+            <button id="loginSubmit" class="premium-btn w-100" data-i18n="loginButton">Sign in securely</button>
           </div>
         </div>
       </div>
@@ -7157,15 +7206,11 @@
       // Only the Firebase account whose UID is listed below may edit the menu.
       // Find a UID in: Firebase Console → Authentication → Users → (user) → Copy UID.
       window.ADMIN_FIREBASE_UID = "45el7lJ5bbP1bVwgFEpBQKyc1wl2";
-      // Login e-mail is only a convenience pre-fill, it is not a secret and is
-      // never used as the authority — the UID above is.
-      window.ADMIN_EMAIL         = "admin@menu.com";
     </script>
     <script>
       (() => {
         const STORAGE_KEYS = {
           lang: 'zakho-menu-lang',
-          admin: 'zakho-menu-admin',
           data: 'zakho-menu-data',
           // Which dish/category ids the online menu is known to contain, plus whether
           // this device still holds edits it has never confirmed there. Ids only — a
@@ -7423,8 +7468,7 @@
             settingFacebook: 'Facebook',
             settingLogo: 'Logo or brand text',
             saveSettingsButton: 'Save settings',
-            loginTitle: 'Admin Access',
-            loginSecurityNote: 'Sign-in is verified by Firebase Authentication — your password is never stored in this file or visible in the page source.',
+            loginTitle: 'Admin sign in',
             formStepName: 'Name & languages',
             formStepNameHint: 'English is required. The others show when a guest switches language.',
             formStepPrice: 'Price & placement',
@@ -7441,10 +7485,10 @@
             photoLocal: 'Photo saved inside the menu data, so it travels with the menu.',
             fieldRequiredTag: 'required',
             errNameRequired: 'Add the English name first.',
-            usernameLabel: 'Username or email',
+            usernameLabel: 'Admin email',
             passwordLabel: 'Password',
             demoCreds: '',
-            loginButton: 'Login to dashboard',
+            loginButton: 'Sign in securely',
             modalClose: 'Close',
             themeLightOption: 'Light',
             themeDarkOption: 'Dark',
@@ -7598,8 +7642,7 @@
             settingFacebook: 'فيسبوك',
             settingLogo: 'الشعار أو نص العلامة التجارية',
             saveSettingsButton: 'حفظ الإعدادات',
-            loginTitle: 'وصول الإدارة',
-            loginSecurityNote: 'يتم التحقق من تسجيل الدخول عبر Firebase Authentication — لا يتم حفظ كلمة مرورك في هذا الملف أبدًا.',
+            loginTitle: 'تسجيل دخول الإدارة',
             formStepName: 'الاسم واللغات',
             formStepNameHint: 'الإنجليزية مطلوبة. اللغات الأخرى تظهر عندما يغيّر الضيف اللغة.',
             formStepPrice: 'السعر والترتيب',
@@ -7616,10 +7659,10 @@
             photoLocal: 'تم حفظ الصورة داخل بيانات القائمة وتُزامن معها.',
             fieldRequiredTag: 'مطلوب',
             errNameRequired: 'أدخل الاسم الإنجليزي أولًا.',
-            usernameLabel: 'اسم المستخدم أو البريد الإلكتروني',
+            usernameLabel: 'البريد الإلكتروني للإدارة',
             passwordLabel: 'كلمة المرور',
             demoCreds: '',
-            loginButton: 'تسجيل الدخول إلى لوحة التحكم',
+            loginButton: 'تسجيل الدخول بأمان',
             modalClose: 'إغلاق',
             themeLightOption: 'فاتح',
             themeDarkOption: 'داكن',
@@ -7767,8 +7810,7 @@
             settingFacebook: 'فەیسبوک',
             settingLogo: 'لۆگۆ یان ناڤێ براندێ',
             saveSettingsButton: 'پاشکەفتکرنا ڕێکخستنان',
-            loginTitle: 'چوونەناڤ ڕێڤەبەر',
-            loginSecurityNote: 'چوونەناڤ د Firebase دا هاتە دووپاتکرناڤ — پەسەڤۆردا تە د ڤێ دۆسێیێ دا نینە.',
+            loginTitle: 'چوونەژوورێ بۆ ڕێڤەبەر',
             formStepName: 'ناڤ و زیمان',
             formStepNameHint: 'ناڤێ ئینگلیزی پێویستە. زیمانێن دین دێنە دیتنێ کاتێ میوان زمانێ گوهرێن.',
             formStepPrice: 'بها و ڕیز',
@@ -7785,10 +7827,10 @@
             photoLocal: 'وێنە د ناڤ داتایێن مێنوی دا هاتە هەلگرتن، دگەل مێنوی دا دبة ئۆنلاین.',
             fieldRequiredTag: 'پێویست',
             errNameRequired: 'پێشێ ناڤێ ئینگلیزی بنڤیسە.',
-            usernameLabel: 'ناڤێ بەکارهێنەر یان ئیمەیڵ',
+            usernameLabel: 'ئیمەیڵا ڕێڤەبەر',
             passwordLabel: 'پەسەڤۆرد',
             demoCreds: '',
-            loginButton: 'چوونەناڤ ڕێڤەبەر',
+            loginButton: 'ب شێوەیێ پاراستی بچۆ ژوور',
             modalClose: 'گرتن',
             themeLightOption: 'ڕوون',
             themeDarkOption: 'تاری',
@@ -7936,8 +7978,7 @@
             settingFacebook: 'Facebook',
             settingLogo: 'Logo veya marka metni',
             saveSettingsButton: 'Ayarları kaydet',
-            loginTitle: 'Yönetici Girişi',
-            loginSecurityNote: 'Giriş, Firebase Authentication tarafından doğrulanır — şifreniz bu dosyada asla saklanmaz.',
+            loginTitle: 'Yönetici girişi',
             formStepName: 'Ad ve diller',
             formStepNameHint: 'İngilizce zorunlu. Diğerleri müşteri dili değiştirdiğinde görünür.',
             formStepPrice: 'Fiyat ve sıralama',
@@ -7954,10 +7995,10 @@
             photoLocal: 'Fotoğraf menü verisinin içinde saklanır ve menüyle birlikte senkronize olur.',
             fieldRequiredTag: 'zorunlu',
             errNameRequired: 'Önce İngilizce adı yazın.',
-            usernameLabel: 'Kullanıcı adı veya e-posta',
+            usernameLabel: 'Yönetici e-postası',
             passwordLabel: 'Şifre',
             demoCreds: '',
-            loginButton: 'Panele giriş yap',
+            loginButton: 'Güvenli giriş yap',
             modalClose: 'Kapat',
             themeLightOption: 'Açık',
             themeDarkOption: 'Koyu',
@@ -8141,7 +8182,6 @@
         let cloudDb = null;
         let cloudAppReady = false;
         let cloudAuth = null;
-        let authNeedsBackup = false;
         let applyingRemote = false;
         let cloudPushTimer = null;
         let cloudSeeded = false;
@@ -8211,7 +8251,7 @@
           const user = currentAuthUser();
           if (!user) return false;
           const wanted = String(window.ADMIN_FIREBASE_UID || '').trim();
-          return !wanted || user.uid === wanted;
+          return Boolean(wanted) && user.uid === wanted;
         };
 
         const renderAdminIdentity = () => {
@@ -8224,10 +8264,8 @@
           const mode = document.getElementById('adminIdentityMode');
           if (email) email.textContent = user.email || user.uid || '';
           if (mode) {
-            // Only claim "online sync" when the cloud really confirmed the menu.
             const live = user.provider === 'firebase' && state.syncStatus === 'live';
-            const offlineSession = user.provider !== 'firebase';
-            mode.textContent = live ? 'online sync' : offlineSession ? 'this device only' : 'sync not live yet';
+            mode.textContent = live ? 'online sync' : 'sync not live yet';
           }
         };
 
@@ -8285,47 +8323,43 @@
           return 'blocked';
         };
 
-        const restoreAdminProfile = () => {
-          if (!state.adminLoggedIn) return;
-          try {
-            const raw = sessionStorage.getItem(ADMIN_PROFILE_KEY);
-            if (raw) state.adminUser = JSON.parse(raw);
-          } catch (e) {}
-          if (!state.adminUser) {
-            state.adminUser = { uid: 'offline', email: window.ADMIN_EMAIL || '', provider: 'offline' };
-          }
-          renderAdminIdentity();
-        };
-
         const observeAuth = () => {
           const auth = initAuth();
-          if (!auth) return;
+          if (!auth) {
+            state.adminLoggedIn = false;
+            state.adminUser = null;
+            return;
+          }
           auth.onAuthStateChanged(user => {
             const allowed = Boolean(user) && isCloudAdmin();
             if (allowed) {
               state.adminUser = { uid: user.uid, email: user.email, provider: 'firebase' };
               state.lastLoginProvider = 'firebase';
-            } else if (state.lastLoginProvider !== 'offline') {
-              // A signed-out visitor keeps read access to the menu but loses the dashboard.
+            } else {
               state.adminUser = null;
-              if (state.adminLoggedIn && user === null) {
-                state.adminLoggedIn = false;
-                writeAdminFlag(false);
-                if (adminDashboard) adminDashboard.classList.remove('visible');
-              }
+              state.lastLoginProvider = '';
             }
+            const wasAdmin = state.adminLoggedIn;
+            state.adminLoggedIn = allowed;
+            if (wasAdmin !== allowed) renderApplicationRoute();
             renderAdminIdentity();
-            updateOfflinePassHint();
             // Signing in as the admin is often the moment a phone finally gets permission
             // to write — flush whatever the ledger says is still unpublished.
             if (allowed && readLedger().dirty && state.syncStatus !== 'toobig') pushToCloud();
+          }, error => {
+            state.adminLoggedIn = false;
+            state.adminUser = null;
+            state.lastLoginProvider = '';
+            renderAdminIdentity();
+            renderApplicationRoute();
+            console.error('[Zakho Menu] Firebase Auth state check failed:', error);
           });
         };
 
         // ---- Unsynced-work ledger --------------------------------------------------
         // Every admin save lands in localStorage first and only then tries Firestore.
-        // A rejected write, the 1 MB size guard, a dead connection, or signing in with
-        // the backup passcode all leave the work local — and the cloud snapshot that
+        // A rejected write, the 1 MB size guard, or a dead connection leaves work
+        // local — and the cloud snapshot that
         // follows used to replace the whole menu, deleting that work for good. The
         // ledger remembers which ids the online menu has confirmed, so an unconfirmed
         // dish or category can never be overwritten away again, even across a reload.
@@ -8450,6 +8484,12 @@
             console.info('[Zakho Menu] Not signed in as the menu admin — changes stay on this device only.');
             return;
           }
+          // A fresh device may have only the built-in local data. Never let it
+          // overwrite the shared menu until Firestore has answered from the server.
+          if (!cloudServerReady) {
+            setSyncState(navigator.onLine === false ? 'offline' : 'pending');
+            return;
+          }
           clearTimeout(cloudPushTimer);
           cloudPushTimer = setTimeout(async () => {
             try {
@@ -8530,10 +8570,12 @@
         };
 
         let cloudGotAnswer = false;
+        let cloudServerReady = false;
 
         const startCloudSync = () => {
           if (!initCloud()) { setSyncState('off'); return; }
           cloudGotAnswer = false;
+          cloudServerReady = false;
           setSyncState('connecting');
           // A disabled Cloud Firestore API never calls back — it just hangs. If the server
           // has not answered in 12s, say so plainly instead of pretending to connect forever.
@@ -8544,8 +8586,16 @@
           }, 12000);
           cloudDb.doc(window.MENU_DOC_PATH).onSnapshot(snapshot => {
             const meta = snapshot.metadata || {};
-            // fromCache = the SDK's local copy, not a server answer. Never call that "live".
-            if (!meta.fromCache) { cloudGotAnswer = true; clearTimeout(connectTimer); }
+            // Cached snapshots may be stale. Keep the local copy until the server
+            // confirms the current menu, then apply that authoritative snapshot.
+            if (meta.fromCache) {
+              if (meta.hasPendingWrites) setSyncState('pending');
+              else if (navigator.onLine === false) setSyncState('offline');
+              return;
+            }
+            cloudGotAnswer = true;
+            cloudServerReady = true;
+            clearTimeout(connectTimer);
             if (snapshot.exists) {
               const remote = snapshot.data();
               const remoteVersion = Number(remote.version) || 0;
@@ -8601,9 +8651,7 @@
             }
             // "Live" only when the cloud really matches this device; unconfirmed local
             // work gets its own honest state instead of a green chip over a lost dish.
-            if (!meta.fromCache) setSyncState(readLedger().dirty ? 'unsynced' : 'live');
-            else if (meta.hasPendingWrites) setSyncState('pending');
-            else if (navigator.onLine === false) setSyncState('offline');
+            setSyncState(readLedger().dirty ? 'unsynced' : 'live');
           }, error => {
             cloudGotAnswer = true;
             clearTimeout(connectTimer);
@@ -8620,14 +8668,11 @@
           return saved && ['en', 'ar', 'bad', 'tr'].includes(saved) ? saved : 'en';
         };
 
-        const readAdminFlag = () => sessionStorage.getItem(STORAGE_KEYS.admin) === 'true';
-
         const writeLanguage = value => localStorage.setItem(STORAGE_KEYS.lang, value);
-        const writeAdminFlag = value => sessionStorage.setItem(STORAGE_KEYS.admin, String(!!value));
 
         state.data = getParsedData();
         state.lang = readLanguage();
-        state.adminLoggedIn = readAdminFlag();
+        state.adminLoggedIn = false;
 
         const productSearchInput = document.getElementById('productSearch');
         const menuSearchToggle = document.getElementById('menuSearchToggle');
@@ -9045,7 +9090,6 @@
             adminDashboard.classList.toggle('visible', state.adminLoggedIn);
             if (!state.adminLoggedIn) {
               clearLoginError();
-              updateOfflinePassHint();
               bootstrap.Modal.getOrCreateInstance(document.getElementById('adminLoginModal'), {
                 backdrop: 'static',
                 keyboard: false,
@@ -10243,23 +10287,6 @@
           });
         };
 
-        // Hash a string with SHA-256 using the built-in Web Crypto API.
-        // Returns a lowercase hex string — no libraries needed.
-        const sha256 = async (message) => {
-          const msgBuffer  = new TextEncoder().encode(message);
-          const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-          return Array.from(new Uint8Array(hashBuffer))
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('');
-        };
-
-        // ---- Device-local backup passcode ----
-        // Used only when Firebase cannot be reached (no network, provider disabled,
-        // file:// preview). Stored as a SHA-256 hash in this browser's localStorage,
-        // so the file itself never contains a password or a password hash.
-        const OFFLINE_PASS_LS_KEY   = 'zakho-menu-offline-passhash';
-        const ADMIN_PROFILE_KEY     = 'zakho-menu-admin-profile';
-
         const showLoginError = message => {
           const loginError = document.getElementById('loginError');
           if (!loginError) return;
@@ -10272,33 +10299,9 @@
           if (loginError) loginError.classList.add('d-none');
         };
 
-        const updateOfflinePassHint = () => {
-          const box = document.getElementById('offlinePassSetup');
-          if (!box) return;
-          // Keep the backup panel hidden while normal Firebase sign-in is possible,
-          // and reveal it only when Firebase cannot be reached from this device.
-          const backupNeeded = authNeedsBackup || !initAuth();
-          box.style.display = backupNeeded ? '' : 'none';
-        };
-
-        const saveOfflinePasscode = async () => {
-          const input = document.getElementById('offlinePassNew');
-          const value = input ? input.value : '';
-          if (!value || value.length < 6) {
-            showLoginError('Backup passcode needs at least 6 characters.');
-            return;
-          }
-          localStorage.setItem(OFFLINE_PASS_LS_KEY, await sha256(value));
-          if (input) input.value = '';
-          updateOfflinePassHint();
-          showToast('Backup passcode saved', 'It lives only in this browser, hashed.', 'success');
-        };
-
         const grantAdmin = (user, note) => {
           state.adminLoggedIn = true;
           state.adminUser = user;
-          writeAdminFlag(true);
-          try { sessionStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify(user)); } catch (e) {}
           clearLoginError();
           const passwordInput = document.getElementById('adminPassword');
           if (passwordInput) passwordInput.value = '';
@@ -10332,69 +10335,59 @@
           clearLoginError();
           submitBtn.disabled = true;
           const auth = initAuth();
+          if (!auth) {
+            submitBtn.disabled = false;
+            document.getElementById('adminPassword').value = '';
+            showLoginError('Firebase Authentication is unavailable. Check your connection and try again.');
+            return;
+          }
 
-          if (auth) {
-            try {
-              const credential = await auth.signInWithEmailAndPassword(username, password);
-              submitBtn.disabled = false;
-              if (!isCloudAdmin()) {
-                showLoginError('This account is not the menu admin. Firebase UID: ' + credential.user.uid);
-                try { await auth.signOut(); } catch (e) {}
-                return;
+          try {
+            const credential = await auth.signInWithEmailAndPassword(username, password);
+            if (!isCloudAdmin()) {
+              showLoginError('This Firebase account is not authorized to manage the menu.');
+              try { await auth.signOut(); } catch (error) {
+                console.error('[Zakho Menu] Could not sign out an unauthorized Firebase account:', error);
               }
-              state.lastLoginProvider = 'firebase';
-              grantAdmin({ uid: credential.user.uid, email: credential.user.email, provider: 'firebase' }, 'Signed in — Firebase sync is live.');
               return;
-            } catch (error) {
-              submitBtn.disabled = false;
-              const code = (error && error.code) || '';
-              const definitive = {
-                'auth/wrong-password': 'Wrong email or password.',
-                'auth/invalid-credential': 'Wrong email or password.',
-                'auth/user-not-found': 'That admin account does not exist in Firebase yet.',
-                'auth/invalid-email': 'That email address is not valid.',
-                'auth/too-many-requests': 'Too many attempts — wait a minute and try again.',
-                'auth/user-disabled': 'This Firebase account is disabled.',
-              };
-              if (definitive[code]) {
-                showLoginError(definitive[code]);
-                showToast('Login failed', definitive[code], 'error');
-                return;
-              }
-              // Connectivity / provider-not-enabled / config errors: fall through to the backup passcode.
-              authNeedsBackup = true;
-              updateOfflinePassHint();
-              console.warn('[Zakho Menu] Firebase sign-in unavailable, trying backup passcode:', error);
             }
+            state.lastLoginProvider = 'firebase';
+            grantAdmin({ uid: credential.user.uid, email: credential.user.email, provider: 'firebase' }, 'Signed in — loading the shared menu.');
+          } catch (error) {
+            const code = (error && error.code) || '';
+            const messages = {
+              'auth/wrong-password': 'Wrong email or password.',
+              'auth/invalid-credential': 'Wrong email or password.',
+              'auth/user-not-found': 'That Firebase account was not found.',
+              'auth/invalid-email': 'That email address is not valid.',
+              'auth/too-many-requests': 'Too many attempts — wait a minute and try again.',
+              'auth/user-disabled': 'This Firebase account is disabled.',
+              'auth/network-request-failed': 'Could not reach Firebase. Check your connection and try again.',
+              'auth/operation-not-allowed': 'Email and password sign-in is not enabled in Firebase Authentication.',
+            };
+            const message = messages[code] || 'Firebase could not verify this sign-in. Please try again.';
+            showLoginError(message);
+            console.error('[Zakho Menu] Firebase sign-in failed:', error);
+          } finally {
+            submitBtn.disabled = false;
+            document.getElementById('adminPassword').value = '';
           }
-
-          // ---- Backup passcode path (this device only) ----
-          const storedHash = (localStorage.getItem(OFFLINE_PASS_LS_KEY) || '').toLowerCase();
-          if (!storedHash) {
-            updateOfflinePassHint();
-            showLoginError(initAuth()
-              ? 'Firebase sign-in did not go through. Set a backup passcode below to work offline, or fix Firebase (Authentication → Sign-in method → Email/Password).'
-              : 'Firebase is not reachable from here. Set a backup passcode below to unlock the dashboard on this device.');
-            return;
-          }
-          const typedHash = await sha256(password);
-          const expectedEmail = String(window.ADMIN_EMAIL || '').toLowerCase();
-          if (typedHash === storedHash && (!expectedEmail || username.toLowerCase() === expectedEmail)) {
-            state.lastLoginProvider = 'offline';
-            grantAdmin({ uid: 'offline', email: username, provider: 'offline' }, 'Offline mode — changes stay on this device.');
-            return;
-          }
-          showLoginError('Backup passcode is not correct for this device.');
         };
 
         const logoutAdmin = async () => {
+          const auth = cloudAuth;
+          if (auth && auth.currentUser) {
+            try {
+              await auth.signOut();
+            } catch (error) {
+              console.error('[Zakho Menu] Firebase sign-out failed:', error);
+              showToast('Sign out failed', 'Firebase could not end this session. Please try again.', 'error');
+              return;
+            }
+          }
           state.adminLoggedIn = false;
           state.adminUser = null;
           state.lastLoginProvider = '';
-          writeAdminFlag(false);
-          try { sessionStorage.removeItem(ADMIN_PROFILE_KEY); } catch (e) {}
-          const auth = cloudAuth;
-          if (auth && auth.currentUser) { try { await auth.signOut(); } catch (e) {} }
           renderAdminIdentity();
           adminDashboard.classList.remove('visible');
           if (window.location.hash === '#admin') {
@@ -10457,28 +10450,6 @@
               }
             });
           });
-          const offlinePassInput = document.getElementById('offlinePassNew');
-          if (offlinePassInput) {
-            offlinePassInput.addEventListener('keydown', event => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                saveOfflinePasscode();
-              }
-            });
-          }
-          const saveOfflineBtn = document.getElementById('saveOfflinePassBtn');
-          if (saveOfflineBtn) saveOfflineBtn.addEventListener('click', saveOfflinePasscode);
-          const emailField = document.getElementById('adminUsername');
-          if (emailField && !emailField.value) emailField.value = window.ADMIN_EMAIL || '';
-          updateOfflinePassHint();
-          document.getElementById('togglePasswordBtn').addEventListener('click', () => {
-            const passwordInput = document.getElementById('adminPassword');
-            const isHidden = passwordInput.type === 'password';
-            passwordInput.type = isHidden ? 'text' : 'password';
-            passwordInput.focus();
-            document.querySelector('#togglePasswordBtn i').className = isHidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
-          });
-
           document.getElementById('adminLogoutBtn').addEventListener('click', logoutAdmin);
 
           // On phones the sync chip collapses to one line; tapping it opens the hint.
@@ -10668,6 +10639,14 @@
         };
 
         const initialize = () => {
+          try {
+            localStorage.removeItem('zakho-menu-offline-passhash');
+            sessionStorage.removeItem('zakho-menu-admin');
+            sessionStorage.removeItem('zakho-menu-admin-profile');
+          } catch (error) {
+            console.warn('[Zakho Menu] Could not clear legacy local admin credentials:', error);
+          }
+
           // Load any keys the admin previously saved from the Settings panel.
           // Must run before startCloudSync() so Firebase picks up the right config.
           loadSavedIntegrationKeys();
@@ -10694,7 +10673,6 @@
           applyLanguage();
           attachEvents();
           renderApplicationRoute();
-          restoreAdminProfile();
           startCloudSync();
           observeAuth();
           updateIntegrationStatus();
