@@ -6331,13 +6331,21 @@
         position: absolute;
         inset: 0;
         z-index: 0;
-        background-image: url("cave-view.jpg");
-        background-size: cover;
-        background-position: 50% 38%;
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 50% 38%;
         background-color: #040302;
+        /* A real <img> layer, not a CSS background: the browser keeps it as
+           a cached GPU texture while it scales, instead of re-rasterising
+           the photograph on every scroll frame. No per-frame filter. */
         transform: scale(1.1);
         transform-origin: 50% 38%;
-        will-change: transform, filter;
+        will-change: transform;
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-drag: none;
       }
 
       .cinema-canvas {
@@ -6348,7 +6356,7 @@
         height: 100%;
         display: block;
         opacity: 0;
-        transition: opacity 1.2s ease;
+        transition: none;
       }
 
       .landing-overlay.cinema-canvas-ready .cinema-canvas { opacity: 1; }
@@ -6426,6 +6434,7 @@
         position: absolute;
         inset: 0;
         content: '';
+        display: none;
         opacity: 0.05;
         mix-blend-mode: overlay;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
@@ -6533,6 +6542,12 @@
       }
 
       .landing-overlay.cinema-revealed .landing-ui::-webkit-scrollbar { display: none; }
+
+      /* While walking through the cave the UI is not merely transparent:
+         it is skipped entirely, so the logo and glass panels cost nothing
+         to paint during the scroll. */
+      .landing-overlay.cinema-pending .landing-ui,
+      .landing-overlay.cinema-on:not(.cinema-revealed) .landing-ui { visibility: hidden; }
 
       /* End of the flight: fit the whole choice — Menu, Instagram, TikTok,
          Find Us, both phone numbers — on one screen over the cave. */
@@ -6749,7 +6764,7 @@
     <div id="landingOverlay" class="landing-overlay">
       <!-- Cinematic cave entrance: scroll-driven scene layer (decorative) -->
       <div class="landing-cinema" id="landingCinema" aria-hidden="true">
-        <div class="cinema-photo" id="cinemaPhoto"></div>
+        <img class="cinema-photo" id="cinemaPhoto" src="cave-view.jpg" alt="" draggable="false" fetchpriority="high" />
         <canvas class="cinema-canvas" id="cinemaCanvas"></canvas>
         <div class="cinema-bloom" id="cinemaBloom"></div>
         <div class="cinema-interior" id="cinemaInterior"></div>
@@ -11276,11 +11291,15 @@
           const camera = new THREE.PerspectiveCamera(mobile ? 66 : 58, 1, 0.1, 400);
           const renderer = new THREE.WebGLRenderer({
             canvas,
-            antialias: true,
+            antialias: false,
             alpha: true,
+            precision: 'mediump',
             powerPreference: 'high-performance',
           });
-          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.6 : 1.8));
+          // The 3D layer is only soft foreground rock. Rendering it below
+          // CSS resolution keeps the scroll at full frame rate; the browser
+          // scales it up behind the photograph's grain and glow.
+          renderer.setPixelRatio(mobile ? 0.8 : 0.9);
           renderer.setClearColor(0x000000, 0);
           renderer.outputEncoding = THREE.sRGBEncoding;
           renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -11493,7 +11512,7 @@
           };
 
           /* ---------- dust caught in the light ---------- */
-          const dustCount = mobile ? 80 : 150;
+          const dustCount = mobile ? 50 : 100;
           const dustGeo = new THREE.BufferGeometry();
           const dustPos = new Float32Array(dustCount * 3);
           for (let i = 0; i < dustCount; i++) {
@@ -11577,19 +11596,12 @@
             overlay.style.setProperty('--cinema-ui', String(uiA));
 
             // The photograph is the cave: scrolling walks us into its mouth,
-            // through the light, and out of the cave.
+            // through the light, and out of the cave. Only the transform is
+            // animated here so the whole layer stays on the GPU.
             if (photo) {
               const zoom = 1.1 + 0.55 * Math.pow(p, 1.45) + 1.25 * sstep(0.76, 0.995, p);
               const lift = -4 * sstep(0.15, 1, p);
-              const glow = sstep(0.74, 0.98, p);
-              const settle = sstep(0.93, 1, p);
-              const bright = 0.7 + 0.32 * sstep(0.02, 0.92, p) + 0.08 * glow;
               photo.style.transform = `translate3d(0, ${lift.toFixed(2)}%, 0) scale(${zoom.toFixed(4)})`;
-              photo.style.filter =
-                `brightness(${bright.toFixed(3)}) ` +
-                `contrast(${(1.03 + 0.13 * p).toFixed(3)}) ` +
-                `saturate(${(0.96 + 0.20 * p).toFixed(3)})` +
-                (settle > 0.01 ? ` blur(${(settle * 0.8).toFixed(2)}px)` : '');
             }
 
             interiorEl.style.opacity = String(sstep(0.9, 0.975, p));
@@ -11604,11 +11616,10 @@
             if (ovationEl) ovationEl.style.opacity = String(0.94 * sstep(0.93, 0.985, p));
 
             // melt the 3D silhouettes into bokeh as the landing takes over
+            // (opacity only - a per-frame blur filter on a full-screen canvas
+            // is very expensive and was dropping frames on scroll)
             const soft = sstep(0.88, 0.985, p);
-            canvas.style.filter = soft > 0.01
-              ? `blur(${(soft * 9).toFixed(1)}px) brightness(${(1 - 0.25 * soft).toFixed(2)})`
-              : 'none';
-            canvas.style.transform = soft > 0.01 ? `scale(${(1 + 0.04 * soft).toFixed(3)})` : 'none';
+            canvas.style.opacity = String(1 - 0.9 * soft);
 
             // The scene stays: the last frame of the cave is the backdrop
             // the landing choices sit on. It is hidden with the overlay.
