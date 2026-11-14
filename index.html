@@ -13,6 +13,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <meta name="theme-color" content="#112820" />
+    <link rel="preload" as="image" href="cave-view.jpg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -4286,11 +4287,7 @@
         inset: 0;
         z-index: 2000;
         overflow-y: auto;
-        background-color: #112820;
-        background-image: url("logo-mark.svg"), url("landing-glow.svg");
-        background-repeat: repeat, no-repeat;
-        background-size: 96px 96px, cover;
-        background-position: center;
+        background-color: #0A1512;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -4313,12 +4310,12 @@
         bottom: 0;
         left: 0;
         height: 150px;
-        background: linear-gradient(to bottom, rgba(17, 40, 32, 0), rgba(17, 40, 32, 0.7) 72%, #112820 100%);
+        background: linear-gradient(to bottom, rgba(6, 12, 10, 0), rgba(6, 12, 10, 0.7) 72%, #0A1512 100%);
         content: '';
         pointer-events: none;
       }
 
-      .landing-overlay > * {
+      .landing-ui > * {
         position: relative;
         z-index: 2;
       }
@@ -6305,11 +6302,465 @@
 
       body.admin-mode td .category-row-icon { margin-block: 2px; }
 
+      /* ============================================================
+         CINEMATIC CAVE ENTRANCE (landing overlay only)
+         A scroll-controlled walk into a real sea cave, layered
+         behind the untouched landing UI. Nothing outside
+         #landingOverlay is affected.
+         ============================================================ */
+      .landing-ui { display: contents; }
+
+      .landing-cinema {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        display: none;
+        overflow: hidden;
+        pointer-events: none;
+        background: #050302;
+        contain: strict;
+      }
+
+      .landing-overlay.cinema-pending .landing-cinema,
+      .landing-overlay.cinema-on .landing-cinema,
+      .landing-overlay.cinema-static .landing-cinema { display: block; }
+
+      /* The real cave photograph. Scroll zooms into its opening while the
+         3D foreground rocks below slide past, so the view has true parallax. */
+      .cinema-photo {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background-image: url("cave-view.jpg");
+        background-size: cover;
+        background-position: 50% 38%;
+        background-color: #040302;
+        transform: scale(1.1);
+        transform-origin: 50% 38%;
+        will-change: transform, filter;
+      }
+
+      .cinema-canvas {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        display: block;
+        opacity: 0;
+        transition: opacity 1.2s ease;
+      }
+
+      .landing-overlay.cinema-canvas-ready .cinema-canvas { opacity: 1; }
+
+      /* Warm light spilling in from the mouth of the cave */
+      .cinema-bloom {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        opacity: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(38% 32% at 50% 38%, rgba(255, 238, 205, 0.82), rgba(255, 178, 96, 0.3) 44%, rgba(0, 0, 0, 0) 76%);
+        mix-blend-mode: screen;
+        will-change: opacity;
+      }
+
+      /* The glow at the end of the walk: scroll pushes through it and out. */
+      .cinema-light {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        opacity: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(70% 58% at 50% 42%, rgba(255, 255, 252, 1) 0%, rgba(255, 249, 232, 0.98) 22%, rgba(255, 229, 182, 0.88) 46%, rgba(255, 205, 140, 0.52) 68%, rgba(255, 190, 120, 0) 88%),
+          radial-gradient(150% 120% at 50% 44%, rgba(255, 247, 230, 0.92), rgba(255, 240, 212, 0.6) 52%, rgba(255, 230, 190, 0.28) 78%, rgba(255, 222, 176, 0.12) 100%);
+        mix-blend-mode: screen;
+        will-change: opacity;
+      }
+
+      /* The golden cave hall behind the landing UI */
+      .cinema-interior {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        opacity: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(64% 56% at 50% 55%, rgba(255, 203, 132, 0.46) 0%, rgba(214, 143, 72, 0.24) 32%, rgba(96, 54, 24, 0.1) 56%, rgba(0, 0, 0, 0) 76%),
+          radial-gradient(130% 92% at 50% 118%, rgba(3, 9, 6, 0.94) 0%, rgba(3, 9, 6, 0) 60%);
+        will-change: opacity;
+      }
+
+      .cinema-interior::before {
+        position: absolute;
+        inset: 0;
+        content: '';
+        opacity: 0.62;
+        filter: blur(5px);
+        background:
+          radial-gradient(7px 7px at 17% 34%, rgba(255, 214, 154, 0.72), rgba(255, 214, 154, 0) 72%),
+          radial-gradient(14px 14px at 9% 52%, rgba(255, 188, 112, 0.34), rgba(255, 188, 112, 0) 70%),
+          radial-gradient(4px 4px at 25% 47%, rgba(255, 232, 190, 0.66), rgba(255, 232, 190, 0) 70%),
+          radial-gradient(11px 11px at 31% 26%, rgba(255, 196, 124, 0.32), rgba(255, 196, 124, 0) 72%),
+          radial-gradient(6px 6px at 81% 31%, rgba(255, 221, 166, 0.58), rgba(255, 221, 166, 0) 70%),
+          radial-gradient(16px 16px at 89% 48%, rgba(255, 183, 106, 0.3), rgba(255, 183, 106, 0) 70%),
+          radial-gradient(4px 4px at 73% 45%, rgba(255, 236, 198, 0.55), rgba(255, 236, 198, 0) 70%),
+          radial-gradient(9px 9px at 92% 24%, rgba(255, 205, 142, 0.34), rgba(255, 205, 142, 0) 72%),
+          radial-gradient(5px 5px at 65% 23%, rgba(255, 226, 180, 0.4), rgba(255, 226, 180, 0) 70%),
+          radial-gradient(12px 12px at 43% 19%, rgba(255, 198, 132, 0.26), rgba(255, 198, 132, 0) 72%);
+      }
+
+      .cinema-grade {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        pointer-events: none;
+        background:
+          radial-gradient(132% 104% at 50% 46%, rgba(0, 0, 0, 0) 48%, rgba(2, 7, 5, 0.34) 100%),
+          linear-gradient(to bottom, rgba(2, 6, 4, 0.3) 0%, rgba(0, 0, 0, 0) 12%, rgba(0, 0, 0, 0) 86%, rgba(2, 6, 4, 0.38) 100%);
+      }
+
+      .cinema-grade::after {
+        position: absolute;
+        inset: 0;
+        content: '';
+        opacity: 0.05;
+        mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+        background-size: 180px 180px;
+      }
+
+      /* End of the walk: the real cave stays on screen and is gathered into
+         a dark vignette, so the menu, socials and phones read on top of it. */
+      .cinema-ovation {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        opacity: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(80% 64% at 50% 42%, rgba(3, 9, 6, 0.64), rgba(3, 9, 6, 0.46) 58%, rgba(3, 9, 6, 0.72) 100%),
+          linear-gradient(to bottom, rgba(2, 7, 5, 0.76) 0%, rgba(2, 7, 5, 0.26) 32%, rgba(2, 7, 5, 0.36) 64%, rgba(2, 7, 5, 0.84) 100%);
+        will-change: opacity;
+      }
+
+      .cinema-letterbox {
+        display: none;
+        position: absolute;
+        inset: 0;
+        z-index: 5;
+        pointer-events: none;
+      }
+
+      .cinema-letterbox span {
+        position: absolute;
+        right: 0;
+        left: 0;
+        height: 5.5vh;
+        background: #010302;
+        will-change: transform;
+      }
+
+      .cinema-letterbox span:first-child {
+        top: 0;
+        transform-origin: top center;
+      }
+
+      .cinema-letterbox span:last-child {
+        bottom: 0;
+        transform-origin: bottom center;
+      }
+
+      /* Scroll runway: creates the scroll distance the flight reads */
+      .landing-cinema-track {
+        display: block;
+        flex: 0 0 auto;
+        height: 0;
+        pointer-events: none;
+      }
+
+      .landing-overlay.cinema-pending .landing-cinema-track,
+      .landing-overlay.cinema-on .landing-cinema-track { height: 300vh; }
+
+      .landing-overlay.cinema-pending,
+      .landing-overlay.cinema-on {
+        padding: 0;
+        overscroll-behavior: contain;
+        scroll-behavior: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        touch-action: pan-y;
+      }
+
+      .landing-overlay.cinema-pending::-webkit-scrollbar,
+      .landing-overlay.cinema-on::-webkit-scrollbar { display: none; }
+
+      .landing-overlay.cinema-pending::before,
+      .landing-overlay.cinema-on::before { opacity: var(--cinema-ui, 0); }
+
+      /* Landing UI, pinned over the scene until the flight ends */
+      .landing-overlay.cinema-pending .landing-ui,
+      .landing-overlay.cinema-on .landing-ui {
+        position: fixed;
+        inset: 0;
+        z-index: 6;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        padding:
+          calc(clamp(1.25rem, 4vh, 2rem) + env(safe-area-inset-top, 0px))
+          calc(1.5rem + env(safe-area-inset-right, 0px))
+          calc(clamp(1.25rem, 4vh, 2rem) + env(safe-area-inset-bottom, 0px))
+          calc(1.5rem + env(safe-area-inset-left, 0px));
+        opacity: 0;
+        pointer-events: none;
+        will-change: opacity, transform;
+      }
+
+      .landing-overlay.cinema-revealed .landing-logo {
+        animation: gr-mark-in 900ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+      }
+
+      /* Once revealed, the landing choices are real, tappable controls. */
+      .landing-overlay.cinema-revealed .landing-ui {
+        pointer-events: auto;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: none;
+      }
+
+      .landing-overlay.cinema-revealed .landing-ui::-webkit-scrollbar { display: none; }
+
+      /* End of the flight: fit the whole choice — Menu, Instagram, TikTok,
+         Find Us, both phone numbers — on one screen over the cave. */
+      .landing-overlay.cinema-on .landing-ui {
+        justify-content: space-between;
+        gap: clamp(0.35rem, 1.2vh, 0.9rem);
+      }
+
+      .landing-overlay.cinema-on .landing-logo-container {
+        width: min(62vw, 31vh, 270px);
+        width: min(62vw, 31dvh, 270px);
+      }
+
+      .landing-overlay.cinema-on .landing-actions { gap: 0.55rem; max-width: 400px; }
+      .landing-overlay.cinema-on .landing-primary-btn { padding: 0.85rem 1.2rem; }
+      .landing-overlay.cinema-on .landing-secondary-links { gap: 0.45rem; max-width: 400px; }
+      .landing-overlay.cinema-on .landing-link { padding: 0.5rem 0.9rem; border-radius: 0.85rem; }
+      .landing-overlay.cinema-on .landing-link-content { gap: 0.6rem; }
+      .landing-overlay.cinema-on .landing-link-content > i {
+        flex-basis: 1.7rem;
+        width: 1.7rem;
+        height: 1.7rem;
+        font-size: 0.8rem;
+      }
+      .landing-overlay.cinema-on .landing-footer { gap: 0.5rem; }
+      .landing-overlay.cinema-on .landing-phone { font-size: 0.92rem; }
+      .landing-overlay.cinema-on .landing-phone i { width: 1.65rem; height: 1.65rem; }
+      .landing-overlay.cinema-on .landing-pagination { display: none; }
+
+      body.cinema-landing { overflow: hidden; }
+
+      /* Scroll cue + skip */
+      .cinema-hint {
+        position: fixed;
+        left: 50%;
+        bottom: calc(4.8vh + env(safe-area-inset-bottom, 0px));
+        z-index: 8;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.7rem;
+        transform: translateX(-50%);
+        color: rgba(248, 241, 227, 0.82);
+        font-size: 0.64rem;
+        font-weight: 600;
+        letter-spacing: 0.36em;
+        text-transform: uppercase;
+        text-align: center;
+        white-space: nowrap;
+        text-shadow: 0 2px 16px rgba(0, 0, 0, 0.72);
+        pointer-events: none;
+        will-change: opacity;
+      }
+
+      .cinema-hint i {
+        display: block;
+        width: 1px;
+        height: 46px;
+        background: linear-gradient(to bottom, rgba(198, 165, 104, 0), rgba(226, 197, 139, 0.9));
+      }
+
+      .landing-overlay.cinema-on .cinema-hint { display: flex; }
+
+      .cinema-skip {
+        position: fixed;
+        right: calc(1.3rem + env(safe-area-inset-right, 0px));
+        bottom: calc(1.35rem + env(safe-area-inset-bottom, 0px));
+        z-index: 9;
+        display: none;
+        align-items: center;
+        padding: 0.55rem 0.95rem;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 999px;
+        background: rgba(6, 12, 9, 0.22);
+        color: rgba(255, 255, 255, 0.64);
+        font-size: 0.62rem;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        transition: color 0.2s ease, border-color 0.2s ease, opacity 0.3s ease;
+        will-change: opacity;
+      }
+
+      .cinema-skip:hover,
+      .cinema-skip:focus-visible {
+        color: #F0DFC0;
+        border-color: rgba(198, 165, 104, 0.55);
+        outline: none;
+      }
+
+      .landing-overlay.cinema-on .cinema-skip { display: none; }
+
+      /* Static mode: reduced motion or a failed 3D load keeps the real cave
+         photograph as a backdrop, with the original landing UI fully usable. */
+      .landing-overlay.cinema-static { padding: 0; }
+      .landing-overlay.cinema-static .cinema-canvas { display: none; }
+      .landing-overlay.cinema-static .cinema-photo { transform: scale(1.12); filter: brightness(0.8); }
+      .landing-overlay.cinema-static .cinema-grade { opacity: 0.94; }
+      .landing-overlay.cinema-static .cinema-grade::before {
+        position: absolute;
+        inset: 0;
+        content: '';
+        background: radial-gradient(74% 64% at 50% 44%, rgba(3, 9, 6, 0.62), rgba(3, 9, 6, 0.28) 58%, rgba(0, 0, 0, 0) 82%);
+      }
+      .landing-overlay.cinema-static .cinema-hint,
+      .landing-overlay.cinema-static .cinema-skip { display: none; }
+
+      @media (max-width: 640px) {
+        .landing-overlay.cinema-pending .landing-ui,
+        .landing-overlay.cinema-on .landing-ui {
+          padding:
+            calc(1.5rem + env(safe-area-inset-top, 0px))
+            calc(1rem + env(safe-area-inset-right, 0px))
+            calc(1.5rem + env(safe-area-inset-bottom, 0px))
+            calc(1rem + env(safe-area-inset-left, 0px));
+        }
+
+        .cinema-hint {
+          font-size: 0.58rem;
+          letter-spacing: 0.3em;
+        }
+
+        .cinema-letterbox span { height: 4.4vh; }
+      }
+
+      @media (max-height: 700px) {
+        .landing-overlay.cinema-pending .landing-ui,
+        .landing-overlay.cinema-on .landing-ui {
+          justify-content: space-between;
+          gap: 0.5rem;
+          padding-top: calc(0.9rem + env(safe-area-inset-top, 0px));
+          padding-bottom: calc(0.9rem + env(safe-area-inset-bottom, 0px));
+        }
+      }
+
+      @media (max-height: 480px) {
+        .landing-overlay.cinema-on .landing-ui { justify-content: flex-start; }
+      }
+
+      /* Short landscape phones: two columns so the logo, Menu, socials and
+         phones all fit on one screen without scrolling. */
+      @media (max-height: 480px) and (min-width: 560px) {
+        .landing-overlay.cinema-on .landing-ui {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          grid-template-rows: auto auto;
+          align-content: center;
+          justify-content: center;
+          column-gap: clamp(1.2rem, 5vw, 3.5rem);
+          row-gap: clamp(0.75rem, 2.2vh, 1rem);
+          padding: 0.7rem 1.4rem;
+        }
+
+        .landing-overlay.cinema-on .landing-header {
+          position: absolute;
+          top: calc(0.6rem + env(safe-area-inset-top, 0px));
+          right: calc(0.9rem + env(safe-area-inset-right, 0px));
+          width: auto;
+        }
+
+        .landing-overlay.cinema-on .landing-hero {
+          grid-column: 1;
+          grid-row: 1;
+          align-self: center;
+        }
+
+        .landing-overlay.cinema-on .landing-logo-container {
+          width: min(34vw, 27vh, 170px);
+          width: min(34vw, 27dvh, 170px);
+          margin: 0;
+        }
+
+        .landing-overlay.cinema-on .landing-actions {
+          grid-column: 2;
+          grid-row: 1;
+          align-self: center;
+          width: 100%;
+          max-width: 380px;
+          gap: 0.35rem;
+        }
+
+        .landing-overlay.cinema-on .landing-primary-btn { padding: 0.65rem 1rem; }
+        .landing-overlay.cinema-on .landing-secondary-links { gap: 0.3rem; }
+        .landing-overlay.cinema-on .landing-link { padding: 0.38rem 0.8rem; }
+        .landing-overlay.cinema-on .landing-link-content > i {
+          flex-basis: 1.45rem;
+          width: 1.45rem;
+          height: 1.45rem;
+          font-size: 0.72rem;
+        }
+
+        .landing-overlay.cinema-on .landing-footer {
+          grid-column: 1 / -1;
+          grid-row: 2;
+          max-width: 440px;
+          justify-self: center;
+        }
+
+        .landing-overlay.cinema-on .landing-phone { font-size: 0.85rem; }
+        .landing-overlay.cinema-on .landing-phone i { width: 1.5rem; height: 1.5rem; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .cinema-canvas { transition: none; }
+        .landing-overlay.cinema-revealed .landing-logo { animation: none; }
+      }
+
     </style>
   </head>
   <body class="ltr">
     <!-- Landing Page Overlay -->
     <div id="landingOverlay" class="landing-overlay">
+      <!-- Cinematic cave entrance: scroll-driven scene layer (decorative) -->
+      <div class="landing-cinema" id="landingCinema" aria-hidden="true">
+        <div class="cinema-photo" id="cinemaPhoto"></div>
+        <canvas class="cinema-canvas" id="cinemaCanvas"></canvas>
+        <div class="cinema-bloom" id="cinemaBloom"></div>
+        <div class="cinema-interior" id="cinemaInterior"></div>
+        <div class="cinema-light" id="cinemaLight"></div>
+        <div class="cinema-grade"></div>
+        <div class="cinema-ovation" id="cinemaOvation"></div>
+        <div class="cinema-letterbox" id="cinemaLetterbox"><span></span><span></span></div>
+      </div>
+      <div class="landing-cinema-track" id="cinemaTrack" aria-hidden="true"></div>
+
+      <div class="landing-ui" id="landingUi">
       <!-- Top Header -->
       <div class="landing-header">
         <button id="landingLangBtn" class="landing-lang-btn" type="button" aria-label="Change language" aria-haspopup="listbox" aria-expanded="false" aria-controls="landingLanguageMenu">
@@ -6389,6 +6840,14 @@
           <span class="developer-credit-name"><span class="developer-credit-word">Salim</span><span class="developer-credit-word">Mustefa</span></span>
         </a>
       </div>
+      </div>
+      <!-- /.landing-ui — the original landing content, unchanged -->
+
+      <div class="cinema-hint" id="cinemaHint" aria-hidden="true">
+        <span>Scroll into the cave</span>
+        <i></i>
+      </div>
+      <button class="cinema-skip" id="cinemaSkip" type="button" tabindex="-1">Skip intro</button>
     </div>
 
     <div class="page-shell">
@@ -9081,7 +9540,6 @@
           const landingOverlay = document.getElementById('landingOverlay');
           if (adminRoute) {
             if (landingOverlay) landingOverlay.classList.add('hidden');
-            try { sessionStorage.setItem('landingVisited', 'true'); } catch (e) {}
           }
 
           if (adminRoute) {
@@ -9419,13 +9877,8 @@
             cafeLogo.addEventListener('error', showLogoFallback, { once: true });
           }
 
-          // Show landing page on first visit
-          const hasVisitedLanding = sessionStorage.getItem('landingVisited');
-          if (!hasVisitedLanding) {
-            overlay.classList.remove('hidden');
-          } else {
-            overlay.classList.add('hidden');
-          }
+          // Every visit opens on the cave, then hands over to the menu
+          overlay.classList.remove('hidden');
 
           // Menu button - navigate to menu
           menuBtn.addEventListener('click', () => {
@@ -9436,7 +9889,6 @@
             const exitDirection = state.lang === 'en' ? 1 : -1;
             menuIcon.style.setProperty('--landing-menu-exit-x', `${exitDirection * 78}px`);
             menuIcon.classList.add('is-sliding');
-            sessionStorage.setItem('landingVisited', 'true');
             const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             const animationDelay = reducedMotion ? 20 : 560;
             window.setTimeout(() => {
@@ -10679,6 +11131,616 @@
         };
 
         initialize();
+      })();
+    </script>
+
+    <!-- ============================================================
+         Cinematic mountain entrance — landing overlay only.
+         Scroll drives a three.js camera flight toward a mountain,
+         through its arched mouth, into a warm golden interior.
+         Any failure falls back to a painted mountain backdrop; the
+         rest of the site is never touched.
+         ============================================================ -->
+    <script>
+      (function () {
+        'use strict';
+
+        const overlay = document.getElementById('landingOverlay');
+        if (!overlay) return;
+        if (overlay.classList.contains('hidden')) return;
+
+        const ui = document.getElementById('landingUi');
+        const hint = document.getElementById('cinemaHint');
+        const skip = document.getElementById('cinemaSkip');
+        const cinemaEl = document.getElementById('landingCinema');
+        const photo = document.getElementById('cinemaPhoto');
+        const interiorEl = document.getElementById('cinemaInterior');
+        const bloomEl = document.getElementById('cinemaBloom');
+        const lightEl = document.getElementById('cinemaLight');
+        const ovationEl = document.getElementById('cinemaOvation');
+        const letterbox = Array.prototype.slice.call(document.querySelectorAll('#cinemaLetterbox span'));
+        const canvas = document.getElementById('cinemaCanvas');
+        if (!ui || !canvas) return;
+
+        const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
+        const sstep = (a, b, x) => {
+          const t = clamp01((x - a) / (b - a || 1e-6));
+          return t * t * (3 - 2 * t);
+        };
+        const lerp = (a, b, t) => a + (b - a) * t;
+
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduced) {
+          overlay.classList.add('cinema-static');
+          return;
+        }
+
+        let started = false;
+        let failed = false;
+        let raf = 0;
+        let lastTime = 0;
+        let targetP = 0;
+        let currentP = 0;
+        let revealed = false;
+
+        const maxScroll = () => Math.max(0, overlay.scrollHeight - overlay.clientHeight);
+
+        const fallback = () => {
+          if (started || failed) return;
+          failed = true;
+          if (raf) { cancelAnimationFrame(raf); raf = 0; }
+          document.body.classList.remove('cinema-landing');
+          overlay.classList.remove('cinema-pending', 'cinema-on', 'cinema-canvas-ready');
+          overlay.classList.add('cinema-static');
+          overlay.scrollTop = 0;
+          ui.style.opacity = '';
+          ui.style.transform = '';
+          ui.inert = false;
+          overlay.style.removeProperty('--cinema-ui');
+          if (cinemaEl) cinemaEl.style.opacity = '';
+          if (photo) { photo.style.transform = ''; photo.style.filter = ''; }
+          if (hint) hint.style.opacity = '';
+          if (skip) { skip.style.opacity = ''; skip.tabIndex = -1; }
+        };
+
+        overlay.classList.add('cinema-pending');
+        document.body.classList.add('cinema-landing');
+        ui.inert = true;
+
+        const loadThree = () => new Promise((resolve, reject) => {
+          if (window.THREE) { resolve(window.THREE); return; }
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';
+          script.async = true;
+          script.onload = () => (window.THREE ? resolve(window.THREE) : reject(new Error('three.js missing')));
+          script.onerror = () => reject(new Error('three.js failed to load'));
+          document.head.appendChild(script);
+          window.setTimeout(() => reject(new Error('three.js timeout')), 12000);
+        });
+
+        /* ------------------------------------------------------------
+           Deterministic noise helpers
+           ------------------------------------------------------------ */
+        const hash2 = (x, y) => {
+          let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263);
+          h = Math.imul(h ^ (h >>> 13), 1274126177);
+          return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+        };
+        const noise2 = (x, y) => {
+          const xi = Math.floor(x), yi = Math.floor(y);
+          const xf = x - xi, yf = y - yi;
+          const u = xf * xf * (3 - 2 * xf);
+          const v = yf * yf * (3 - 2 * yf);
+          const a = hash2(xi, yi), b = hash2(xi + 1, yi);
+          const c = hash2(xi, yi + 1), d = hash2(xi + 1, yi + 1);
+          return lerp(lerp(a, b, u), lerp(c, d, u), v);
+        };
+        const fbm2 = (x, y, oct) => {
+          let s = 0, a = 0.5, n = 0, f = 1;
+          for (let i = 0; i < oct; i++) { s += a * noise2(x * f, y * f); n += a; a *= 0.5; f *= 2.03; }
+          return s / n;
+        };
+        const hash3 = (x, y, z) => {
+          let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 2147483647);
+          h = Math.imul(h ^ (h >>> 13), 1274126177);
+          return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+        };
+        const noise3 = (x, y, z) => {
+          const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+          const xf = x - xi, yf = y - yi, zf = z - zi;
+          const u = xf * xf * (3 - 2 * xf);
+          const v = yf * yf * (3 - 2 * yf);
+          const w = zf * zf * (3 - 2 * zf);
+          const c000 = hash3(xi, yi, zi), c100 = hash3(xi + 1, yi, zi);
+          const c010 = hash3(xi, yi + 1, zi), c110 = hash3(xi + 1, yi + 1, zi);
+          const c001 = hash3(xi, yi, zi + 1), c101 = hash3(xi + 1, yi, zi + 1);
+          const c011 = hash3(xi, yi + 1, zi + 1), c111 = hash3(xi + 1, yi + 1, zi + 1);
+          return lerp(
+            lerp(lerp(c000, c100, u), lerp(c010, c110, u), v),
+            lerp(lerp(c001, c101, u), lerp(c011, c111, u), v),
+            w
+          );
+        };
+
+        /* ------------------------------------------------------------
+           Scene
+           ------------------------------------------------------------ */
+        const buildScene = (THREE) => {
+          const mobile = window.matchMedia('(max-width: 820px)').matches;
+
+          /* The cave itself is the photograph in `.cinema-photo`. Everything
+             below is transparent 3D in front of it: the rock lips, dripstones
+             and rubble that frame the view, so moving through the scene has
+             real parallax and the photo is not just a zooming backdrop. */
+          const scene = new THREE.Scene();
+          const camera = new THREE.PerspectiveCamera(mobile ? 66 : 58, 1, 0.1, 400);
+          const renderer = new THREE.WebGLRenderer({
+            canvas,
+            antialias: true,
+            alpha: true,
+            powerPreference: 'high-performance',
+          });
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.6 : 1.8));
+          renderer.setClearColor(0x000000, 0);
+          renderer.outputEncoding = THREE.sRGBEncoding;
+          renderer.toneMapping = THREE.ACESFilmicToneMapping;
+          renderer.toneMappingExposure = 1.02;
+
+          /* ---------- stone mottle (colour only, no bump: bump on a
+             spherical uv reads as moiré when the rock fills the screen) ---------- */
+          const makeMottle = size => {
+            const c = document.createElement('canvas');
+            c.width = c.height = size;
+            const ctx = c.getContext('2d');
+            const img = ctx.createImageData(size, size);
+            for (let y = 0; y < size; y++) {
+              for (let x = 0; x < size; x++) {
+                const n = fbm2(x * 0.028 + 1.7, y * 0.028 + 4.3, 5);
+                const n2 = fbm2(x * 0.085 + 5.5, y * 0.085 + 2.5, 3);
+                const pit = fbm2(x * 0.21 + 9.1, y * 0.21 + 7.7, 2);
+                const v = clamp01(0.6 + 0.34 * n + 0.16 * n2 - 0.14 * sstep(0.62, 0.86, pit));
+                const i = (y * size + x) * 4;
+                img.data[i] = v * 255;
+                img.data[i + 1] = v * 242;
+                img.data[i + 2] = v * 226;
+                img.data[i + 3] = 255;
+              }
+            }
+            ctx.putImageData(img, 0, 0);
+            const tex = new THREE.CanvasTexture(c);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+            return tex;
+          };
+
+          const mottle = makeMottle(256);
+          mottle.repeat.set(1.6, 1.6);
+
+          /* ---------- light: the only light source is the mouth ---------- */
+          scene.add(new THREE.HemisphereLight(0x45301f, 0x040302, 0.62));
+          scene.add(new THREE.AmbientLight(0x1c110a, 0.28));
+
+          const mouthKey = new THREE.DirectionalLight(0xffa759, 1.0);
+          mouthKey.position.set(0.14, 0.52, -1);
+          scene.add(mouthKey);
+
+          const mouthBounce = new THREE.PointLight(0xff9a52, 1.5, 240, 1.35);
+          mouthBounce.position.set(0, 4, -64);
+          scene.add(mouthBounce);
+
+          const coolFill = new THREE.DirectionalLight(0x76849c, 0.14);
+          coolFill.position.set(-0.5, -0.2, 1);
+          scene.add(coolFill);
+
+          /* ---------- rock ---------- */
+          // IcosahedronGeometry is non-indexed, so built-in normals are per-face.
+          // Weld equal positions and average their normals for eroded stone.
+          const smoothNormals = geo => {
+            const pos = geo.attributes.position;
+            const nrm = geo.attributes.normal;
+            const acc = new Map();
+            for (let i = 0; i < pos.count; i++) {
+              const k = Math.round(pos.getX(i) * 1000) + ',' + Math.round(pos.getY(i) * 1000) + ',' + Math.round(pos.getZ(i) * 1000);
+              let e = acc.get(k);
+              if (!e) { e = { x: 0, y: 0, z: 0, ids: [] }; acc.set(k, e); }
+              e.x += nrm.getX(i); e.y += nrm.getY(i); e.z += nrm.getZ(i);
+              e.ids.push(i);
+            }
+            acc.forEach(e => {
+              const l = Math.hypot(e.x, e.y, e.z) || 1;
+              const nx = e.x / l, ny = e.y / l, nz = e.z / l;
+              for (let j = 0; j < e.ids.length; j++) nrm.setXYZ(e.ids[j], nx, ny, nz);
+            });
+            nrm.needsUpdate = true;
+          };
+
+          // icosahedra / cones carry no usable uvs; a spherical map lets the
+          // grain bump read as pitted stone instead of a flat silhouette
+          const addSphericalUV = geo => {
+            const pos = geo.attributes.position;
+            const uvs = new Float32Array(pos.count * 2);
+            for (let i = 0; i < pos.count; i++) {
+              const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+              const len = Math.hypot(x, y, z) || 1;
+              uvs[i * 2] = 0.5 + Math.atan2(z, x) / (Math.PI * 2);
+              uvs[i * 2 + 1] = 0.5 + Math.asin(Math.max(-1, Math.min(1, y / len))) / Math.PI;
+            }
+            geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+          };
+
+          const stoneGeo = (seed, detail) => {
+            const geo = new THREE.IcosahedronGeometry(1, detail);
+            const pos = geo.attributes.position;
+            const v = new THREE.Vector3();
+            for (let i = 0; i < pos.count; i++) {
+              v.set(pos.getX(i), pos.getY(i), pos.getZ(i));
+              const f = 0.66 + 0.56 * noise3(v.x * 1.05 + seed, v.y * 1.05, v.z * 1.05 + seed * 2.1);
+              const f2 = 0.84 + 0.3 * noise3(v.x * 3.3, v.y * 3.3 + seed, v.z * 3.3);
+              v.multiplyScalar(f * f2);
+              pos.setXYZ(i, v.x, v.y, v.z);
+            }
+            geo.computeVertexNormals();
+            smoothNormals(geo);
+            addSphericalUV(geo);
+            return geo;
+          };
+
+          // a tapered dripstone: base sits at the ceiling, tip points down
+          const dripGeo = seed => {
+            const geo = new THREE.ConeGeometry(0.5, 1, mobile ? 7 : 10, 6, true);
+            geo.rotateX(Math.PI);
+            geo.translate(0, -0.5, 0);
+            const pos = geo.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+              const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+              const a = Math.atan2(z, x);
+              const k = 1
+                + 0.34 * (noise3(x * 6 + seed, y * 3.2, z * 6) - 0.5)
+                + 0.13 * (noise3(x * 15, y * 9 + seed, z * 15) - 0.5);
+              pos.setXYZ(i, x * k, y + 0.02 * Math.sin(a * 3 + y * 7), z * k);
+            }
+            geo.computeVertexNormals();
+            smoothNormals(geo);
+            addSphericalUV(geo);
+            return geo;
+          };
+
+          const stoneMat = new THREE.MeshLambertMaterial({
+            color: 0x0b0704,
+            map: mottle,
+          });
+
+          // near-camera rock reads as a silhouette in the photograph, so the
+          // framing masses stay unlit; only the dripstones catch the mouth light
+          const silhouetteMat = new THREE.MeshBasicMaterial({
+            color: 0x010101,
+            map: mottle,
+          });
+
+          /* ---------- framing rocks, anchored to the screen ----------
+             nx / ny are screen fractions (1 = right / top edge), depth is
+             metres in front of the resting camera, rw / rh are radii in
+             half-screen units. layout() keeps them pinned to the edges at
+             any aspect ratio. */
+          const CAM_Z = 6;
+          const frame = [];
+
+          const placeStone = (seed, detail, nx, ny, depth, rw, rh, rot) => {
+            const mesh = new THREE.Mesh(stoneGeo(seed, detail), silhouetteMat);
+            mesh.userData.frame = { nx, ny, depth, rw, rh };
+            if (rot) mesh.rotation.set(rot[0], rot[1], rot[2]);
+            scene.add(mesh);
+            frame.push(mesh);
+          };
+
+          const placeDrip = (seed, nx, depth, length, width, rot) => {
+            const mesh = new THREE.Mesh(dripGeo(seed), stoneMat);
+            mesh.userData.frame = { nx, ny: 1.02, depth, rw: width, rh: length };
+            if (rot) mesh.rotation.set(rot[0], rot[1], rot[2]);
+            scene.add(mesh);
+            frame.push(mesh);
+          };
+
+          // hanging teeth on the left, as in the photograph
+          placeDrip(3, -0.82, 16, 0.5, 0.17, [0.03, 0.4, 0.07]);
+          placeDrip(5, -0.64, 13, 0.32, 0.12, [0, -0.2, 0.03]);
+          placeDrip(7, -1.08, 19, 0.58, 0.19, [0.04, 0.9, 0.09]);
+          placeDrip(11, -0.5, 17, 0.2, 0.08, [0, 0.1, 0.02]);
+          // ...and a lighter set on the right
+          placeDrip(13, 0.84, 15, 0.4, 0.13, [0.02, -0.5, -0.06]);
+          placeDrip(17, 0.93, 20, 0.55, 0.17, [0.03, 0.2, -0.08]);
+          placeDrip(19, 0.6, 12, 0.2, 0.07, [0, 0.3, 0.02]);
+
+          // ceiling shoulder above the opening
+          placeStone(23, 3, -0.1, 1.2, 25, 0.45, 0.24, [0.2, 0.4, 0]);
+          placeStone(29, 3, 0.5, 1.19, 21, 0.34, 0.22, [0.1, 1.1, 0]);
+
+          // thin wall slivers, pushed almost out of frame and broken into
+          // overlapping crags so their edge never reads as one smooth lobe
+          placeStone(31, 3, -1.44, 0.34, 24, 0.52, 0.62, [0.1, 0.5, 0.2]);
+          placeStone(32, 3, -1.5, 0.02, 19, 0.48, 0.58, [0.3, 1.1, 0.1]);
+          placeStone(33, 3, -1.38, -0.3, 16, 0.42, 0.52, [0.2, 0.4, 0.3]);
+          placeStone(34, 3, -1.52, -0.62, 13, 0.4, 0.5, [0.2, 1.4, 0.1]);
+          placeStone(37, 3, 1.46, 0.3, 24, 0.52, 0.62, [0, -0.7, -0.15]);
+          placeStone(38, 3, 1.52, -0.02, 19, 0.48, 0.58, [0.2, 0.7, -0.2]);
+          placeStone(39, 3, 1.4, -0.32, 16, 0.42, 0.52, [0, 1.2, -0.1]);
+          placeStone(40, 3, 1.54, -0.64, 13, 0.4, 0.5, [0.1, 0.8, 0]);
+
+          // a lip of broken rubble at the water line
+          placeStone(47, 3, -1.02, -1.24, 13, 0.46, 0.32, [0.4, 0.2, 0.1]);
+          placeStone(48, 3, -0.62, -1.3, 16, 0.5, 0.34, [0.2, 1.3, 0.1]);
+          placeStone(49, 3, -0.18, -1.34, 21, 0.52, 0.36, [0.3, 0.6, 0]);
+          placeStone(50, 3, 0.28, -1.32, 17, 0.46, 0.32, [0.1, 1.6, -0.1]);
+          placeStone(51, 3, 0.72, -1.28, 14, 0.46, 0.3, [0.2, 0.4, 0]);
+          placeStone(52, 3, 1.08, -1.22, 12, 0.4, 0.28, [0.3, 1.1, 0.1]);
+          // near dark shoulders in the bottom corners for depth
+          placeStone(61, 2, -1.18, -1.02, 9, 0.38, 0.38, [0.3, 0.2, 0.2]);
+          placeStone(67, 2, 1.18, -1.0, 9, 0.38, 0.38, [0.1, 1.2, -0.1]);
+
+          const layout = () => {
+            const tanH = Math.tan((camera.fov * Math.PI) / 360);
+            for (let i = 0; i < frame.length; i++) {
+              const mesh = frame[i];
+              const f = mesh.userData.frame;
+              const hh = tanH * f.depth;
+              const hw = hh * camera.aspect;
+              // horizontal radius rides the width, so portrait phones keep the
+              // crags pinned to the edges instead of swallowing the frame
+              const sx = f.rw * hw * 0.625;
+              mesh.position.set(f.nx * hw, f.ny * hh, CAM_Z - f.depth);
+              mesh.scale.set(sx, f.rh * hh, sx);
+            }
+          };
+
+          /* ---------- dust caught in the light ---------- */
+          const dustCount = mobile ? 80 : 150;
+          const dustGeo = new THREE.BufferGeometry();
+          const dustPos = new Float32Array(dustCount * 3);
+          for (let i = 0; i < dustCount; i++) {
+            dustPos[i * 3] = (Math.random() - 0.5) * 26;
+            dustPos[i * 3 + 1] = (Math.random() - 0.5) * 18;
+            dustPos[i * 3 + 2] = CAM_Z - 7 - Math.random() * 38;
+          }
+          dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+          const moteC = document.createElement('canvas');
+          moteC.width = moteC.height = 32;
+          const moteCtx = moteC.getContext('2d');
+          const moteGrad = moteCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+          moteGrad.addColorStop(0, 'rgba(255,246,226,1)');
+          moteGrad.addColorStop(0.4, 'rgba(255,226,184,0.5)');
+          moteGrad.addColorStop(1, 'rgba(255,210,150,0)');
+          moteCtx.fillStyle = moteGrad;
+          moteCtx.fillRect(0, 0, 32, 32);
+          const moteTex = new THREE.CanvasTexture(moteC);
+          const dustMat = new THREE.PointsMaterial({
+            color: 0xffd2a2,
+            map: moteTex,
+            size: mobile ? 0.16 : 0.2,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity: 0.28,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+          });
+          const dust = new THREE.Points(dustGeo, dustMat);
+          scene.add(dust);
+
+          /* ---------- camera ---------- */
+          const easeFlight = p => 0.62 * p + 0.38 * (p * p * (3 - 2 * p));
+
+          const poseAt = p => {
+            const e = easeFlight(clamp01(p));
+            return {
+              x: 0.7 * Math.sin(p * 2.2),
+              y: 0.3 + 0.5 * e + 0.12 * Math.sin(p * 3.1),
+              z: CAM_Z - 4.6 * e,
+            };
+          };
+
+          const applyPose = p => {
+            const pose = poseAt(p);
+            camera.position.set(pose.x, pose.y, pose.z);
+            camera.lookAt(pose.x * 0.35, pose.y + 0.45, pose.z - 60);
+          };
+
+          const resize = () => {
+            const w = overlay.clientWidth || window.innerWidth;
+            const h = overlay.clientHeight || window.innerHeight;
+            renderer.setSize(w, h, false);
+            camera.aspect = w / Math.max(1, h);
+            camera.updateProjectionMatrix();
+            layout();
+          };
+          resize();
+
+          const render = p => {
+            applyPose(p);
+            renderer.render(scene, camera);
+          };
+
+          return { render, resize, applyPose, camera, renderer, scene };
+        };
+
+        /* ------------------------------------------------------------
+           Scroll wiring
+           ------------------------------------------------------------ */
+        const start = (engine) => {
+          if (started || failed) return;
+          started = true;
+
+          const updateUI = p => {
+            // The landing choices only exist on the far side of the light:
+            // scroll through the white glow first, then the section appears.
+            const uiA = sstep(0.965, 0.995, p);
+            ui.style.opacity = String(uiA);
+            ui.style.transform = `translate3d(0, ${(1 - uiA) * 24}px, 0)`;
+            overlay.style.setProperty('--cinema-ui', String(uiA));
+
+            // The photograph is the cave: scrolling walks us into its mouth,
+            // through the light, and out of the cave.
+            if (photo) {
+              const zoom = 1.1 + 0.55 * Math.pow(p, 1.45) + 1.25 * sstep(0.76, 0.995, p);
+              const lift = -4 * sstep(0.15, 1, p);
+              const glow = sstep(0.74, 0.98, p);
+              const settle = sstep(0.93, 1, p);
+              const bright = 0.7 + 0.32 * sstep(0.02, 0.92, p) + 0.08 * glow;
+              photo.style.transform = `translate3d(0, ${lift.toFixed(2)}%, 0) scale(${zoom.toFixed(4)})`;
+              photo.style.filter =
+                `brightness(${bright.toFixed(3)}) ` +
+                `contrast(${(1.03 + 0.13 * p).toFixed(3)}) ` +
+                `saturate(${(0.96 + 0.20 * p).toFixed(3)})` +
+                (settle > 0.01 ? ` blur(${(settle * 0.8).toFixed(2)}px)` : '');
+            }
+
+            interiorEl.style.opacity = String(sstep(0.9, 0.975, p));
+            bloomEl.style.opacity = String(sstep(0.5, 0.9, p) * (1 - 0.45 * sstep(0.95, 1, p)));
+            if (lightEl) {
+              // Fill the screen with white light around p≈0.95, then let it
+              // ease back so the landing sits in the glow of the cave mouth.
+              const lightIn = sstep(0.8, 0.94, p);
+              const lightOut = sstep(0.955, 1, p);
+              lightEl.style.opacity = String(lightIn * (1 - 0.62 * lightOut));
+            }
+            if (ovationEl) ovationEl.style.opacity = String(0.94 * sstep(0.93, 0.985, p));
+
+            // melt the 3D silhouettes into bokeh as the landing takes over
+            const soft = sstep(0.88, 0.985, p);
+            canvas.style.filter = soft > 0.01
+              ? `blur(${(soft * 9).toFixed(1)}px) brightness(${(1 - 0.25 * soft).toFixed(2)})`
+              : 'none';
+            canvas.style.transform = soft > 0.01 ? `scale(${(1 + 0.04 * soft).toFixed(3)})` : 'none';
+
+            // The scene stays: the last frame of the cave is the backdrop
+            // the landing choices sit on. It is hidden with the overlay.
+            const bars = 1 - sstep(0.87, 0.99, p);
+            letterbox.forEach(bar => { bar.style.transform = `scaleY(${bars})`; });
+
+            hint.style.opacity = String(1 - sstep(0.012, 0.075, p));
+            const skipA = 1 - sstep(0.8, 0.9, p);
+            skip.style.opacity = String(skipA);
+            skip.style.pointerEvents = skipA < 0.05 ? 'none' : 'auto';
+            skip.tabIndex = skipA < 0.05 ? -1 : 0;
+
+            ui.inert = uiA < 0.55;
+
+            if (uiA > 0.4 && !revealed) {
+              revealed = true;
+              overlay.classList.add('cinema-revealed');
+            } else if (uiA < 0.04 && revealed) {
+              revealed = false;
+              overlay.classList.remove('cinema-revealed');
+            }
+          };
+
+          const applyAll = p => {
+            engine.render(p);
+            updateUI(p);
+          };
+
+          // reaching the end of the flight walks the guest straight into the menu,
+          // after a beat on the landing page so Menu / Instagram stay readable
+          const landingMenuBtn = document.getElementById('landingMenuBtn');
+          let menuTimer = 0;
+          let menuOpened = false;
+          const cancelAutoMenu = () => {
+            if (!menuTimer) return;
+            window.clearTimeout(menuTimer);
+            menuTimer = 0;
+          };
+          const maybeOpenMenu = () => {
+            if (menuOpened) return;
+            const atEnd = targetP >= 0.985 && currentP >= 0.985;
+            if (atEnd) {
+              if (!menuTimer) {
+                menuTimer = window.setTimeout(() => {
+                  menuTimer = 0;
+                  if (menuOpened || currentP < 0.96) return;
+                  if (!landingMenuBtn || landingMenuBtn.disabled) return;
+                  menuOpened = true;
+                  landingMenuBtn.click();
+                }, 2400);
+              }
+            } else {
+              cancelAutoMenu();
+            }
+          };
+
+          // if the guest starts using the landing page (Instagram, language, Menu),
+          // stop the automatic hand-off so they keep the choice
+          ['pointerdown', 'keydown', 'focusin'].forEach(type => {
+            ui.addEventListener(type, cancelAutoMenu);
+          });
+
+          const frame = time => {
+            raf = 0;
+            const dt = Math.min(0.05, (time - (lastTime || time)) / 1000);
+            lastTime = time;
+            const k = 1 - Math.exp(-dt * 7.5);
+            currentP += (targetP - currentP) * k;
+            if (Math.abs(targetP - currentP) < 0.0005) currentP = targetP;
+            applyAll(currentP);
+            maybeOpenMenu();
+            if (Math.abs(targetP - currentP) > 0.0005 && !document.hidden) {
+              raf = window.requestAnimationFrame(frame);
+            }
+          };
+
+          const kick = () => {
+            if (!raf) raf = window.requestAnimationFrame(frame);
+          };
+
+          const readScroll = () => {
+            const max = maxScroll();
+            targetP = max > 0 ? clamp01(overlay.scrollTop / max) : 1;
+          };
+
+          overlay.addEventListener('scroll', () => { readScroll(); kick(); }, { passive: true });
+
+          window.addEventListener('resize', () => {
+            engine.resize();
+            readScroll();
+            kick();
+          });
+
+          document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) { lastTime = 0; kick(); }
+          });
+
+          skip.addEventListener('click', () => {
+            overlay.scrollTo({ top: maxScroll(), behavior: 'smooth' });
+          });
+
+          const observer = new MutationObserver(() => {
+            if (overlay.classList.contains('hidden')) {
+              document.body.classList.remove('cinema-landing');
+              if (raf) { cancelAnimationFrame(raf); raf = 0; }
+              observer.disconnect();
+            }
+          });
+          observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+
+          // Land at the mouth of the cave every time, then reveal the WebGL layer.
+          overlay.scrollTop = 0;
+          readScroll();
+          currentP = targetP;
+          lastTime = 0;
+          applyAll(currentP);
+          overlay.classList.remove('cinema-pending');
+          overlay.classList.add('cinema-on', 'cinema-canvas-ready');
+          skip.tabIndex = 0;
+        };
+
+        loadThree()
+          .then(THREE => {
+            try {
+              const engine = buildScene(THREE);
+              start(engine);
+            } catch (error) {
+              console.warn('[Golden River] Cave scene unavailable:', error);
+              fallback();
+            }
+          })
+          .catch(fallback);
       })();
     </script>
   </body>
