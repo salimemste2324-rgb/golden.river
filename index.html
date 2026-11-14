@@ -6501,6 +6501,7 @@
         scrollbar-width: none;
         -ms-overflow-style: none;
         touch-action: pan-y;
+        -webkit-overflow-scrolling: touch;
       }
 
       .landing-overlay.cinema-pending::-webkit-scrollbar,
@@ -6642,8 +6643,8 @@
 
       .landing-overlay.cinema-on .cinema-skip { display: none; }
 
-      /* Static mode: reduced motion or a failed 3D load keeps the real cave
-         photograph as a backdrop, with the original landing UI fully usable. */
+      /* Static mode: reduced motion keeps the real cave photograph as a
+         backdrop, with the original landing UI fully usable. */
       .landing-overlay.cinema-static { padding: 0; }
       .landing-overlay.cinema-static .cinema-canvas { display: none; }
       .landing-overlay.cinema-static .cinema-photo { transform: scale(1.12); filter: brightness(0.8); }
@@ -6656,6 +6657,26 @@
       }
       .landing-overlay.cinema-static .cinema-hint,
       .landing-overlay.cinema-static .cinema-skip { display: none; }
+
+      /* Phones: the same walk, with only the full-screen layers a phone GPU
+         can composite without dropping frames. `mix-blend-mode: screen` and
+         the blurred lantern sprite sheet both force the GPU to read the whole
+         backdrop every frame; they are dropped, and the warm glow is baked
+         into the gradients instead (a white gradient composites the same way
+         over this cave). */
+      @media (max-width: 820px) {
+        .cinema-bloom { display: none; }
+        .cinema-canvas { display: none; }
+
+        .cinema-light { mix-blend-mode: normal; }
+
+        .cinema-interior {
+          background:
+            radial-gradient(68% 58% at 50% 55%, rgba(255, 203, 132, 0.44) 0%, rgba(214, 143, 72, 0.22) 32%, rgba(96, 54, 24, 0.09) 56%, rgba(0, 0, 0, 0) 78%);
+        }
+
+        .cinema-interior::before { display: none; }
+      }
 
       @media (max-width: 640px) {
         .landing-overlay.cinema-pending .landing-ui,
@@ -11167,7 +11188,6 @@
         const ui = document.getElementById('landingUi');
         const hint = document.getElementById('cinemaHint');
         const skip = document.getElementById('cinemaSkip');
-        const cinemaEl = document.getElementById('landingCinema');
         const photo = document.getElementById('cinemaPhoto');
         const interiorEl = document.getElementById('cinemaInterior');
         const bloomEl = document.getElementById('cinemaBloom');
@@ -11191,7 +11211,6 @@
         }
 
         let started = false;
-        let failed = false;
         let raf = 0;
         let lastTime = 0;
         let targetP = 0;
@@ -11199,24 +11218,10 @@
         let revealed = false;
 
         const maxScroll = () => Math.max(0, overlay.scrollHeight - overlay.clientHeight);
-
-        const fallback = () => {
-          if (started || failed) return;
-          failed = true;
-          if (raf) { cancelAnimationFrame(raf); raf = 0; }
-          document.body.classList.remove('cinema-landing');
-          overlay.classList.remove('cinema-pending', 'cinema-on', 'cinema-canvas-ready');
-          overlay.classList.add('cinema-static');
-          overlay.scrollTop = 0;
-          ui.style.opacity = '';
-          ui.style.transform = '';
-          ui.inert = false;
-          overlay.style.removeProperty('--cinema-ui');
-          if (cinemaEl) cinemaEl.style.opacity = '';
-          if (photo) { photo.style.transform = ''; photo.style.filter = ''; }
-          if (hint) hint.style.opacity = '';
-          if (skip) { skip.style.opacity = ''; skip.tabIndex = -1; }
-        };
+        // Reading scrollHeight forces a synchronous layout. It only changes
+        // when the runway is re-measured, so the height is cached and the
+        // scroll handler never flushes style work mid-gesture.
+        let maxScrollPx = 0;
 
         overlay.classList.add('cinema-pending');
         document.body.classList.add('cinema-landing');
@@ -11298,8 +11303,10 @@
           });
           // The 3D layer is only soft foreground rock. Rendering it below
           // CSS resolution keeps the scroll at full frame rate; the browser
-          // scales it up behind the photograph's grain and glow.
-          renderer.setPixelRatio(mobile ? 0.8 : 0.9);
+          // scales it up behind the photograph's grain and glow. Phones get a
+          // further cut: the silhouettes are pure black, so the lower buffer
+          // is invisible, but the fill cost on a phone GPU drops a lot.
+          renderer.setPixelRatio(mobile ? 0.62 : 0.9);
           renderer.setClearColor(0x000000, 0);
           renderer.outputEncoding = THREE.sRGBEncoding;
           renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -11445,7 +11452,10 @@
           const frame = [];
 
           const placeStone = (seed, detail, nx, ny, depth, rw, rh, rot) => {
-            const mesh = new THREE.Mesh(stoneGeo(seed, detail), silhouetteMat);
+            // One detail level lower on phones: framing rock is a black
+            // silhouette, and the extra triangles cost more than they show.
+            const level = mobile && detail > 1 ? detail - 1 : detail;
+            const mesh = new THREE.Mesh(stoneGeo(seed, level), silhouetteMat);
             mesh.userData.frame = { nx, ny, depth, rw, rh };
             if (rot) mesh.rotation.set(rot[0], rot[1], rot[2]);
             scene.add(mesh);
@@ -11512,7 +11522,7 @@
           };
 
           /* ---------- dust caught in the light ---------- */
-          const dustCount = mobile ? 50 : 100;
+          const dustCount = mobile ? 24 : 100;
           const dustGeo = new THREE.BufferGeometry();
           const dustPos = new Float32Array(dustCount * 3);
           for (let i = 0; i < dustCount; i++) {
@@ -11583,17 +11593,44 @@
         /* ------------------------------------------------------------
            Scroll wiring
            ------------------------------------------------------------ */
-        const start = (engine) => {
-          if (started || failed) return;
+        const start = () => {
+          if (started) return;
           started = true;
+
+          // The 3D foreground is optional: the walk below runs on the photo
+          // alone, and the scene is slotted in when three.js is ready.
+          let engine = null;
+
+          // Phones follow the finger more tightly (still eased, never jumpy),
+          // so the walk does not feel like it is trailing the gesture.
+          const isPhone = window.matchMedia('(max-width: 820px)').matches;
+          const follow = isPhone ? 11.5 : 7.5;
+
+          // Writing the same opacity to a full-screen layer every frame still
+          // costs a style recalc, so each layer is only touched when its
+          // value actually moves.
+          const styleCache = new WeakMap();
+          const setStyle = (el, prop, value) => {
+            if (!el) return;
+            let seen = styleCache.get(el);
+            if (!seen) { seen = {}; styleCache.set(el, seen); }
+            if (seen[prop] === value) return;
+            seen[prop] = value;
+            el.style[prop] = value;
+          };
+          let uiShown = -1;
+          let uiInert = false;
 
           const updateUI = p => {
             // The landing choices only exist on the far side of the light:
             // scroll through the white glow first, then the section appears.
             const uiA = sstep(0.965, 0.995, p);
-            ui.style.opacity = String(uiA);
-            ui.style.transform = `translate3d(0, ${(1 - uiA) * 24}px, 0)`;
-            overlay.style.setProperty('--cinema-ui', String(uiA));
+            if (uiA !== uiShown) {
+              uiShown = uiA;
+              setStyle(ui, 'opacity', String(uiA));
+              setStyle(ui, 'transform', `translate3d(0, ${(1 - uiA) * 24}px, 0)`);
+              overlay.style.setProperty('--cinema-ui', String(uiA));
+            }
 
             // The photograph is the cave: scrolling walks us into its mouth,
             // through the light, and out of the cave. Only the transform is
@@ -11601,38 +11638,45 @@
             if (photo) {
               const zoom = 1.1 + 0.55 * Math.pow(p, 1.45) + 1.25 * sstep(0.76, 0.995, p);
               const lift = -4 * sstep(0.15, 1, p);
-              photo.style.transform = `translate3d(0, ${lift.toFixed(2)}%, 0) scale(${zoom.toFixed(4)})`;
+              setStyle(photo, 'transform', `translate3d(0, ${lift.toFixed(2)}%, 0) scale(${zoom.toFixed(4)})`);
             }
 
-            interiorEl.style.opacity = String(sstep(0.9, 0.975, p));
-            bloomEl.style.opacity = String(sstep(0.5, 0.9, p) * (1 - 0.45 * sstep(0.95, 1, p)));
+            setStyle(interiorEl, 'opacity', String(sstep(0.9, 0.975, p)));
+            if (!isPhone) {
+              setStyle(bloomEl, 'opacity', String(sstep(0.5, 0.9, p) * (1 - 0.45 * sstep(0.95, 1, p))));
+            }
             if (lightEl) {
               // Fill the screen with white light around p≈0.95, then let it
               // ease back so the landing sits in the glow of the cave mouth.
               const lightIn = sstep(0.8, 0.94, p);
               const lightOut = sstep(0.955, 1, p);
-              lightEl.style.opacity = String(lightIn * (1 - 0.62 * lightOut));
+              setStyle(lightEl, 'opacity', String(lightIn * (1 - 0.62 * lightOut)));
             }
-            if (ovationEl) ovationEl.style.opacity = String(0.94 * sstep(0.93, 0.985, p));
+            if (ovationEl) setStyle(ovationEl, 'opacity', String(0.94 * sstep(0.93, 0.985, p)));
 
             // melt the 3D silhouettes into bokeh as the landing takes over
             // (opacity only - a per-frame blur filter on a full-screen canvas
             // is very expensive and was dropping frames on scroll)
             const soft = sstep(0.88, 0.985, p);
-            canvas.style.opacity = String(1 - 0.9 * soft);
+            if (!isPhone) setStyle(canvas, 'opacity', String(1 - 0.9 * soft));
 
             // The scene stays: the last frame of the cave is the backdrop
             // the landing choices sit on. It is hidden with the overlay.
             const bars = 1 - sstep(0.87, 0.99, p);
-            letterbox.forEach(bar => { bar.style.transform = `scaleY(${bars})`; });
+            letterbox.forEach(bar => setStyle(bar, 'transform', `scaleY(${bars})`));
 
-            hint.style.opacity = String(1 - sstep(0.012, 0.075, p));
-            const skipA = 1 - sstep(0.8, 0.9, p);
-            skip.style.opacity = String(skipA);
-            skip.style.pointerEvents = skipA < 0.05 ? 'none' : 'auto';
-            skip.tabIndex = skipA < 0.05 ? -1 : 0;
+            setStyle(hint, 'opacity', String(1 - sstep(0.012, 0.075, p)));
+            if (skip) {
+              const skipA = 1 - sstep(0.8, 0.9, p);
+              setStyle(skip, 'opacity', String(skipA));
+              const pe = skipA < 0.05 ? 'none' : 'auto';
+              if (skip.style.pointerEvents !== pe) skip.style.pointerEvents = pe;
+              const ti = skipA < 0.05 ? -1 : 0;
+              if (skip.tabIndex !== ti) skip.tabIndex = ti;
+            }
 
-            ui.inert = uiA < 0.55;
+            const wantInert = uiA < 0.55;
+            if (wantInert !== uiInert) { uiInert = wantInert; ui.inert = wantInert; }
 
             if (uiA > 0.4 && !revealed) {
               revealed = true;
@@ -11644,7 +11688,7 @@
           };
 
           const applyAll = p => {
-            engine.render(p);
+            if (engine) engine.render(p);
             updateUI(p);
           };
 
@@ -11686,7 +11730,7 @@
             raf = 0;
             const dt = Math.min(0.05, (time - (lastTime || time)) / 1000);
             lastTime = time;
-            const k = 1 - Math.exp(-dt * 7.5);
+            const k = 1 - Math.exp(-dt * follow);
             currentP += (targetP - currentP) * k;
             if (Math.abs(targetP - currentP) < 0.0005) currentP = targetP;
             applyAll(currentP);
@@ -11701,16 +11745,44 @@
           };
 
           const readScroll = () => {
-            const max = maxScroll();
-            targetP = max > 0 ? clamp01(overlay.scrollTop / max) : 1;
+            targetP = maxScrollPx > 0 ? clamp01(overlay.scrollTop / maxScrollPx) : 1;
+          };
+
+          // Phones shift the layout viewport when the URL bar collapses and
+          // fire `resize` mid-gesture. Rebuilding the WebGL buffer and the
+          // 300vh runway at that moment is what made the walk jump and stall
+          // on mobile, so small height shifts are ignored and the runway is
+          // pinned in pixels once.
+          const trackEl = document.getElementById('cinemaTrack');
+          let vw = 0, vh = 0;
+          const fitViewport = force => {
+            const w = overlay.clientWidth || window.innerWidth;
+            const h = overlay.clientHeight || window.innerHeight;
+            if (!force && vw && w === vw && h === vh) return;
+            // The runway follows the viewport so the walk always ends at p=1,
+            // but rebuilding the WebGL buffer is skipped for small height
+            // shifts (a phone's URL bar); that stall is what read as lag.
+            const gpuResize = force || !vw || Math.abs(w - vw) > 2 || Math.abs(h - vh) > 140;
+            vw = w; vh = h;
+            if (trackEl) trackEl.style.height = Math.round(h * 3) + 'px';
+            maxScrollPx = maxScroll();
+            if (gpuResize && engine) engine.resize();
           };
 
           overlay.addEventListener('scroll', () => { readScroll(); kick(); }, { passive: true });
 
           window.addEventListener('resize', () => {
-            engine.resize();
+            fitViewport(false);
             readScroll();
             kick();
+          });
+
+          window.addEventListener('orientationchange', () => {
+            window.setTimeout(() => {
+              fitViewport(true);
+              readScroll();
+              kick();
+            }, 180);
           });
 
           document.addEventListener('visibilitychange', () => {
@@ -11731,27 +11803,65 @@
           observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
 
           // Land at the mouth of the cave every time, then reveal the WebGL layer.
+          fitViewport(true);
           overlay.scrollTop = 0;
           readScroll();
           currentP = targetP;
           lastTime = 0;
           applyAll(currentP);
+
+          // Paint the glow layers once now, invisibly, so their first real
+          // appearance during the opening gesture doesn't rasterize a
+          // full-screen gradient in the middle of the scroll.
+          const warmLayers = [interiorEl, lightEl, ovationEl, bloomEl].filter(Boolean);
+          warmLayers.forEach(el => { el.style.opacity = '0.004'; });
+          let warmFrames = 2;
+          const cool = () => {
+            if (--warmFrames > 0) { window.requestAnimationFrame(cool); return; }
+            warmLayers.forEach(el => { el.style.opacity = '0'; });
+          };
+          window.requestAnimationFrame(cool);
+
           overlay.classList.remove('cinema-pending');
-          overlay.classList.add('cinema-on', 'cinema-canvas-ready');
+          overlay.classList.add('cinema-on');
           skip.tabIndex = 0;
+
+          // Slot the 3D rock in once it exists, without touching the scroll
+          // position, so a slow CDN never freezes or snaps the walk.
+          return {
+            attach: next => {
+              engine = next;
+              if (!engine) return;
+              engine.resize();
+              maxScrollPx = maxScroll();
+              applyAll(currentP);
+              overlay.classList.add('cinema-canvas-ready');
+            },
+          };
         };
 
-        loadThree()
-          .then(THREE => {
-            try {
-              const engine = buildScene(THREE);
-              start(engine);
-            } catch (error) {
-              console.warn('[Golden River] Cave scene unavailable:', error);
-              fallback();
-            }
-          })
-          .catch(fallback);
+        const intro = start();
+
+        // The walk is the photograph plus CSS glow, so it responds on the
+        // first frame. three.js only adds the foreground rock; if it is slow
+        // or blocked, the cave still walks and the landing still arrives.
+        // Phones take the photo walk only. At phone width the 3D rock is a
+        // black silhouette on black cave wall - it barely registers - while
+        // dropping it removes a CDN download, a WebGL context and a
+        // full-screen transparent composite from every scroll frame.
+        if (!window.matchMedia('(max-width: 820px)').matches) {
+          loadThree()
+            .then(THREE => {
+              try {
+                intro.attach(buildScene(THREE));
+              } catch (error) {
+                console.warn('[Golden River] Foreground 3D unavailable, photo walk only:', error);
+              }
+            })
+            .catch(error => {
+              console.warn('[Golden River] three.js unavailable, photo walk only:', error);
+            });
+        }
       })();
     </script>
   </body>
