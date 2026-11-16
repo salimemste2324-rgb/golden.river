@@ -1,11 +1,18 @@
 rules_version = '2';
 
-// Public menu reads; only the authenticated admin may change the shared menu document.
+// Public menu reads; only the authenticated admin may change menu data.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /menu/site {
       allow read: if true;
       allow write: if request.auth != null
+        && request.auth.uid == "45el7lJ5bbP1bVwgFEpBQKyc1wl2";
+    }
+
+    match /menu/site/{collection}/{itemId} {
+      allow read: if collection in ["products", "categories"];
+      allow write: if collection in ["products", "categories"]
+        && request.auth != null
         && request.auth.uid == "45el7lJ5bbP1bVwgFEpBQKyc1wl2";
     }
 

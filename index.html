@@ -7685,14 +7685,14 @@
         appId: "1:563698975123:web:2e977abe306310d3d3a866",
         measurementId: "G-CMHZF8371P",
       };
-      // The single Firestore document that holds the whole menu.
+      // Menu settings live here; products and categories are stored as individual documents.
       window.MENU_DOC_PATH = "menu/site";
 
       // ---- 2. ImgBB — FREE image hosting (no Firebase Storage needed) ----
       // Get a free API key in 30 seconds at https://api.imgbb.com/
       // When set, product/category images are uploaded to ImgBB and only the
-      // tiny URL is stored in Firestore — keeping the document well under 1 MB.
-      // Leave empty ("") to keep storing images as base64 locally (offline only).
+      // tiny URL is stored in Firestore.
+      // Leave empty ("") to store resized images with their individual menu items.
       window.IMGBB_API_KEY = "";
 
       // ---- 3. Admin access ----
@@ -8654,17 +8654,91 @@
           }
         };
 
-        const saveData = () => {
+        const LOCAL_IMAGE_DB = 'zakho-menu-image-cache';
+        const LOCAL_IMAGE_STORE = 'images';
+
+        const openLocalImageDb = () => new Promise((resolve, reject) => {
+          if (!window.indexedDB) {
+            reject(new Error('This browser does not support offline image storage.'));
+            return;
+          }
+          const request = window.indexedDB.open(LOCAL_IMAGE_DB, 1);
+          request.onupgradeneeded = () => request.result.createObjectStore(LOCAL_IMAGE_STORE);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error || new Error('Could not open offline image storage.'));
+        });
+
+        const localImageKey = (field, item) => `${field}/${encodeURIComponent(String(item.id))}`;
+
+        const persistLocalImages = async data => {
+          const db = await openLocalImageDb();
+          await new Promise((resolve, reject) => {
+            const transaction = db.transaction(LOCAL_IMAGE_STORE, 'readwrite');
+            const store = transaction.objectStore(LOCAL_IMAGE_STORE);
+            store.clear();
+            ['products', 'categories'].forEach(field => {
+              (data[field] || []).forEach(item => {
+                if (item && item.id && typeof item.image === 'string' && item.image.startsWith('data:image/')) {
+                  store.put(item.image, localImageKey(field, item));
+                }
+              });
+            });
+            transaction.oncomplete = resolve;
+            transaction.onerror = () => reject(transaction.error || new Error('Could not save offline menu images.'));
+            transaction.onabort = () => reject(transaction.error || new Error('Offline image storage was interrupted.'));
+          });
+          db.close();
+        };
+
+        const restoreLocalImages = async data => {
+          const db = await openLocalImageDb();
+          await new Promise((resolve, reject) => {
+            const transaction = db.transaction(LOCAL_IMAGE_STORE, 'readonly');
+            const store = transaction.objectStore(LOCAL_IMAGE_STORE);
+            ['products', 'categories'].forEach(field => {
+              (data[field] || []).forEach(item => {
+                if (!item || !item.id || (typeof item.image === 'string' && item.image.startsWith('data:image/'))) return;
+                const request = store.get(localImageKey(field, item));
+                request.onsuccess = () => {
+                  if (typeof request.result === 'string') item.image = request.result;
+                };
+              });
+            });
+            transaction.oncomplete = resolve;
+            transaction.onerror = () => reject(transaction.error || new Error('Could not restore offline menu images.'));
+          });
+          db.close();
+        };
+
+        const buildLocalMenuCache = data => {
+          const cached = JSON.parse(JSON.stringify(data));
+          ['products', 'categories'].forEach(field => {
+            (cached[field] || []).forEach(item => {
+              if (item && typeof item.image === 'string' && item.image.startsWith('data:image/')) item.image = '';
+            });
+          });
+          return cached;
+        };
+
+        const writeLocalMenu = data => {
           try {
-            localStorage.setItem(STORAGE_KEYS.data, JSON.stringify(state.data));
+            localStorage.setItem(STORAGE_KEYS.data, JSON.stringify(buildLocalMenuCache(data)));
           } catch (error) {
             Swal.fire({
               icon: 'warning',
-              title: 'Storage limit reached',
-              text: 'The browser storage is full. Please reduce uploaded image sizes or clear items you no longer use.',
+              title: 'Menu cache could not be saved',
+              text: 'Your menu is still in memory and will sync online when connected.',
               confirmButtonText: 'Okay',
             });
           }
+          persistLocalImages(data).catch(error => {
+            console.error('[Zakho Menu] Could not save offline images:', error);
+            showToast('Offline image backup failed', 'Your menu can still sync online, but some photos may not be available offline.', 'warning');
+          });
+        };
+
+        const saveData = () => {
+          writeLocalMenu(state.data);
           updateSyncHint();
           // Only work done in the admin panel counts as "mine until the cloud says
           // otherwise" — a visitor's browser must never claim the shared document.
@@ -8673,13 +8747,12 @@
         };
 
         // ---- Firebase Cloud Firestore real-time sync ----
-        // LocalStorage above always stays as the offline cache; Firestore mirrors it online.
+        // LocalStorage stores menu text; IndexedDB keeps offline photos while Firestore mirrors the menu online.
         let cloudDb = null;
         let cloudAppReady = false;
         let cloudAuth = null;
         let applyingRemote = false;
         let cloudPushTimer = null;
-        let cloudSeeded = false;
 
         const cloudConfigured = () => {
           const c = window.FIREBASE_CONFIG || {};
@@ -8774,8 +8847,8 @@
           timeout:      { label: 'No answer from Firestore',      dot: '#E06A5A', hint: () => 'The Cloud Firestore API is not switched on for this project yet. Open console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=' + ((window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId) || 'your-project-id') + ', press Enable, wait a minute, then reload this page.' },
           pending:      { label: 'Edits pending upload',          dot: '#E0A63C', hint: 'Saved on this device, but Firestore has not confirmed them yet. Check the connection — or that the database exists in this Firebase project.' },
           unsynced:     { label: () => { const n = unsyncedCount(); return n ? n + (n === 1 ? ' change not online yet' : ' changes not online yet') : 'Edits not online yet'; }, dot: '#E0A63C', hint: 'These dishes or categories are safe on this device, but the online menu has not accepted them. They are retried automatically and the cloud copy will never delete them.' },
-          toobig:       { label: 'Menu still too large to sync',  dot: '#E06A5A', hint: 'Photos were auto-compressed, but this menu still exceeds the safe Firestore document size. Use fewer or smaller photos.' },
-          shrunk:       { label: 'Live — photos auto-shrunk',     dot: '#2FBF8F', hint: 'Online. Photos were automatically compressed to fit the Firestore document limit.' },
+          toobig:       { label: 'Menu item too large to sync',   dot: '#E06A5A', hint: 'One menu item is larger than Firestore allows after photo compression.' },
+          shrunk:       { label: 'Live — photos auto-shrunk',     dot: '#2FBF8F', hint: 'Online. A large photo was compressed to fit its individual menu item.' },
           offline:      { label: 'No internet — saved on device', dot: '#E0A63C', hint: 'Your edits stay on this device until the connection returns.' },
         };
 
@@ -8800,12 +8873,7 @@
           if (!hint) return;
           const config = SYNC_STATES[state.syncStatus] || SYNC_STATES.off;
           const baseHint = typeof config.hint === 'function' ? config.hint() : config.hint;
-          const bytes = new Blob([JSON.stringify(state.data)]).size;
-          const size = bytes >= 1024 * 1024
-            ? `${(bytes / (1024 * 1024)).toFixed(2)} MB`
-            : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-          const safeTargetKb = Math.floor(SAFE_MENU_DOCUMENT_BYTES / 1024);
-          const estimate = `Estimated menu data: ${size} / ${safeTargetKb} KB safe publish target`;
+          const estimate = `${state.data.products.length} products stored separately`;
           hint.textContent = [baseHint, estimate].filter(Boolean).join(' · ');
           hint.style.display = 'block';
         };
@@ -8854,7 +8922,7 @@
 
         // ---- Unsynced-work ledger --------------------------------------------------
         // Every admin save lands in localStorage first and only then tries Firestore.
-        // A rejected write, the 1 MB size guard, or a dead connection leaves work
+        // A rejected write or a dead connection leaves work
         // local — and the cloud snapshot that
         // follows used to replace the whole menu, deleting that work for good. The
         // ledger remembers which ids the online menu has confirmed, so an unconfirmed
@@ -8928,12 +8996,9 @@
           return count;
         };
 
-        // Compress existing base64 photos in the outgoing copy when total menu data
-        // approaches the Firestore document limit. The server snapshot then updates
-        // this device with the smaller images.
+        // A Firestore document has a 1 MiB limit, so each menu item is stored separately.
         const SHRINK_PASSES = [[1000, 0.72], [800, 0.62], [640, 0.52], [480, 0.42], [360, 0.34], [280, 0.28]];
-        const AUTO_COMPRESS_THRESHOLD_BYTES = 750000;
-        const SAFE_MENU_DOCUMENT_BYTES = 1024 * 1024 - 16 * 1024;
+        const SAFE_MENU_ITEM_BYTES = 1024 * 1024 - 16 * 1024;
 
         const shrinkPhoto = (dataUrl, targetChars) => new Promise(resolve => {
           const source = String(dataUrl || '');
@@ -8954,24 +9019,74 @@
           img.src = source;
         });
 
-        const shrinkPhotosToFit = async payload => {
-          const images = [];
-          ['products', 'categories'].forEach(field => {
-            (payload[field] || []).forEach(item => {
-              if (item && typeof item.image === 'string' && item.image.startsWith('data:image/')) images.push(item);
-            });
+        let cloudCollectionsReady = { products: false, categories: false };
+        let cloudRemoteItems = { products: [], categories: [] };
+        let cloudMetadata = null;
+        let cloudLegacyData = null;
+        let cloudMigrationInProgress = false;
+        let cloudConnectTimer = null;
+        let lastAppliedCloudSignature = '';
+
+        const cloudCollectionPath = field => `${window.MENU_DOC_PATH}/${field}`;
+        const cloudItemKey = item => encodeURIComponent(String(item.id));
+
+        const applyRemoteMenu = remoteData => {
+          const ledger = readLedger();
+          const signature = JSON.stringify({
+            settings: remoteData.settings || {},
+            products: remoteData.products || [],
+            categories: remoteData.categories || [],
+            version: remoteData.version || 0,
+            storageFormat: remoteData.storageFormat || 0,
           });
-          images.sort((a, b) => b.image.length - a.image.length);
-          const targetChars = Math.max(24000, Math.min(72000, Math.floor(AUTO_COMPRESS_THRESHOLD_BYTES * 0.65 / Math.max(images.length, 1))));
-          for (const item of images) {
-            if (new Blob([JSON.stringify({ ...payload, updatedAt: 0 })]).size <= AUTO_COMPRESS_THRESHOLD_BYTES) break;
-            item.image = await shrinkPhoto(item.image, targetChars);
+          if (!ledger.dirty && signature === lastAppliedCloudSignature) return;
+          let mergedRemote = remoteData;
+          if (ledger.dirty) {
+            const local = state.data || { products: [], categories: [] };
+            mergedRemote = { ...remoteData };
+            ['products', 'categories'].forEach(field => {
+              const localItems = Array.isArray(local[field]) ? local[field] : [];
+              const remoteItems = Array.isArray(remoteData[field]) ? remoteData[field] : [];
+              const removed = ledger[field].filter(id => !localItems.some(item => item && item.id === id));
+              const newLocal = localItems.filter(item => item && item.id && !ledger[field].includes(item.id));
+              mergedRemote[field] = remoteItems.filter(item => item && !removed.includes(item.id));
+              newLocal.forEach(item => {
+                if (!mergedRemote[field].some(existing => existing && existing.id === item.id)) mergedRemote[field].push(item);
+              });
+            });
           }
-          return payload;
+          applyingRemote = true;
+          state.data = getParsedData(mergedRemote);
+          lastAppliedCloudSignature = signature;
+          writeLocalMenu(state.data);
+          reconcileLedger(remoteData);
+          refreshAllFromData();
+          applyingRemote = false;
         };
 
-        // Debounced write of the whole menu document; skipped when we are only applying a remote update.
-        let photosWereShrunk = false;   // this publish had to compress oversized photos
+        const updateCloudReadiness = () => {
+          if (!cloudMetadata || !cloudCollectionsReady.products || !cloudCollectionsReady.categories) return;
+          cloudServerReady = true;
+          cloudGotAnswer = true;
+          clearTimeout(cloudConnectTimer);
+          if (cloudMetadata.storageFormat !== 2 && cloudLegacyData) {
+            applyRemoteMenu(cloudLegacyData);
+            if (isCloudAdmin() && !cloudMigrationInProgress) pushToCloud();
+            return;
+          }
+          const remoteData = {
+            ...(cloudMetadata || {}),
+            products: cloudRemoteItems.products,
+            categories: cloudRemoteItems.categories,
+          };
+          delete remoteData.updatedAt;
+          applyRemoteMenu(remoteData);
+          if (readLedger().dirty && isCloudAdmin()) pushToCloud();
+          else setSyncState('live');
+        };
+
+        // Writes menu items individually so adding products does not grow one giant document.
+        let photosWereShrunk = false;
 
         const pushToCloud = () => {
           if (applyingRemote || !initCloud()) return;
@@ -8990,61 +9105,81 @@
           cloudPushTimer = setTimeout(async () => {
             try {
               photosWereShrunk = false;
-              // Deep-copy through JSON so nothing shares references with state.data,
-              // then attach the sentinel afterwards: a FieldValue does not survive
-              // JSON.stringify, and the object it turns into would have been written
-              // to the document as a plain map instead of a server timestamp.
-              const buildPayload = () => {
-                const payload = JSON.parse(JSON.stringify({ ...state.data, version: 13 }));
-                payload.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-                return payload;
-              };
-              let payload = buildPayload();
-              // JSON.stringify ignores the sentinel, so measure the data itself.
-              const sizeOf = obj => new Blob([JSON.stringify({ ...obj, updatedAt: 0 })]).size;
-              let size = sizeOf(payload);
-              if (size > AUTO_COMPRESS_THRESHOLD_BYTES) {
-                // Compress base64 photos across the whole menu before the Firestore
-                // document reaches its safe publish target.
-                const sizeBeforeShrink = size;
-                payload = await shrinkPhotosToFit(payload);
-                size = sizeOf(payload);
-                if (size < sizeBeforeShrink) photosWereShrunk = true;
-              }
-              if (size > SAFE_MENU_DOCUMENT_BYTES) {
-                // Do not just dim the chip: a skipped push used to look like a saved
-                // dish, and the next remote snapshot then quietly dropped it again.
-                // The ledger keeps the work safe on this device until it can go out.
-                setSyncState('toobig');
-                showToast('Not published — menu too large', `Saved on this device, but the estimated menu size is ${Math.round(size / 1024)} KB after photo compression. The safe Firestore limit is ${Math.floor(SAFE_MENU_DOCUMENT_BYTES / 1024)} KB.`, 'warning');
-                console.warn('[Zakho Menu] Menu is ~' + Math.round(size / 1024) + 'KB after photo compression, over the safe Firestore document limit.');
-                return;
-              }
-              const confirmedIds = { products: payload.products, categories: payload.categories };
-              const writeAck = cloudDb.doc(window.MENU_DOC_PATH).set(payload);
-              // set() only resolves once the server confirms. If Firestore is unreachable
-              // or its API is off it hangs quietly, so warn after 10s instead of looking fine.
-              let acked = false;
-              const writeTimer = setTimeout(() => {
-                if (!acked && state.syncStatus !== 'live') setSyncState('pending');
-              }, 10000);
-              writeAck.then(() => {
-                acked = true;
-                clearTimeout(writeTimer);
-                // The online menu now holds exactly this, so nothing local is at risk.
-                confirmLedger(confirmedIds);
-                setSyncState(photosWereShrunk ? 'shrunk' : 'live');
-                if (photosWereShrunk) {
-                  photosWereShrunk = false;
-                  showToast('Photos compressed', "Some pictures were shrunk so the menu fits Firestore's 1 MB document limit. Everything is online now.", 'success');
+              cloudMigrationInProgress = Boolean(cloudLegacyData);
+              const payload = JSON.parse(JSON.stringify(state.data));
+              setSyncState('pending');
+              const writeItems = async field => {
+                const collection = cloudDb.collection(cloudCollectionPath(field));
+                const snapshot = await collection.get({ source: 'server' });
+                const remoteByKey = new Map(snapshot.docs.map(doc => [doc.id, doc.data()]));
+                const localItems = Array.isArray(payload[field]) ? payload[field] : [];
+                const localByKey = new Map();
+                for (const sourceItem of localItems) {
+                  if (!sourceItem || !sourceItem.id) continue;
+                  const item = JSON.parse(JSON.stringify(sourceItem));
+                  const key = cloudItemKey(item);
+                  localByKey.set(key, item);
+                  if (new Blob([JSON.stringify(item)]).size > SAFE_MENU_ITEM_BYTES && typeof item.image === 'string' && item.image.startsWith('data:image/')) {
+                    item.image = await shrinkPhoto(item.image, 120000);
+                    photosWereShrunk = true;
+                  }
+                  const size = new Blob([JSON.stringify(item)]).size;
+                  if (size > SAFE_MENU_ITEM_BYTES) {
+                    throw new Error(`The ${field === 'products' ? 'product' : 'category'} "${item.name && (item.name.en || item.name)}" is larger than Firestore's per-item limit.`);
+                  }
+                  localByKey.set(key, item);
                 }
-              }).catch(err => {
-                acked = true;
-                clearTimeout(writeTimer);
-                setSyncState(unsyncedCount() ? 'unsynced' : describeCloudError(err));
-                console.error('[Zakho Menu] Firestore write failed:', err);
-              });
+                const operations = [];
+                remoteByKey.forEach((remoteItem, key) => {
+                  if (!localByKey.has(key)) operations.push({ type: 'delete', key });
+                });
+                localByKey.forEach((item, key) => {
+                  if (JSON.stringify(remoteByKey.get(key)) !== JSON.stringify(item)) operations.push({ type: 'set', key, item });
+                });
+                let batch = cloudDb.batch();
+                let batchOperations = 0;
+                let batchBytes = 0;
+                for (const operation of operations) {
+                  const operationBytes = operation.type === 'set'
+                    ? new Blob([JSON.stringify(operation.item)]).size
+                    : 100;
+                  if (batchOperations && (batchOperations >= 450 || batchBytes + operationBytes > 8 * 1024 * 1024)) {
+                    await batch.commit();
+                    batch = cloudDb.batch();
+                    batchOperations = 0;
+                    batchBytes = 0;
+                  }
+                  const ref = collection.doc(operation.key);
+                  if (operation.type === 'delete') batch.delete(ref);
+                  else batch.set(ref, operation.item);
+                  batchOperations += 1;
+                  batchBytes += operationBytes;
+                }
+                if (batchOperations) await batch.commit();
+              };
+
+              await writeItems('products');
+              await writeItems('categories');
+              const metadata = {
+                version: 13,
+                storageFormat: 2,
+                settings: payload.settings || {},
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              };
+              await cloudDb.doc(window.MENU_DOC_PATH).set(metadata);
+              const confirmedIds = { products: payload.products, categories: payload.categories };
+              cloudMigrationInProgress = false;
+              cloudLegacyData = null;
+              confirmLedger(confirmedIds);
+              setSyncState(photosWereShrunk ? 'shrunk' : 'live');
+              if (photosWereShrunk) showToast('Photos compressed', 'A large image was reduced to fit its own menu item. Everything is online now.', 'success');
+              photosWereShrunk = false;
             } catch (error) {
+              cloudMigrationInProgress = false;
+              const errorMessage = error && error.message ? error.message : 'The menu could not be saved online. Your local copy is still available.';
+              const itemTooLarge = /per-item limit/i.test(errorMessage);
+              setSyncState(unsyncedCount() ? 'unsynced' : itemTooLarge ? 'toobig' : describeCloudError(error));
+              showToast('Menu not synced', errorMessage, 'error');
               console.error('[Zakho Menu] Could not prepare cloud payload:', error);
             }
           }, 400);
@@ -9072,88 +9207,53 @@
           if (!initCloud()) { setSyncState('off'); return; }
           cloudGotAnswer = false;
           cloudServerReady = false;
+          cloudMetadata = null;
+          cloudLegacyData = null;
+          cloudCollectionsReady = { products: false, categories: false };
+          cloudRemoteItems = { products: [], categories: [] };
           setSyncState('connecting');
           // A disabled Cloud Firestore API never calls back — it just hangs. If the server
           // has not answered in 12s, say so plainly instead of pretending to connect forever.
-          const connectTimer = setTimeout(() => {
+          cloudConnectTimer = setTimeout(() => {
             if (!cloudGotAnswer && ['connecting', 'pending'].includes(state.syncStatus)) {
               setSyncState(navigator.onLine === false ? 'offline' : 'timeout');
             }
           }, 12000);
           cloudDb.doc(window.MENU_DOC_PATH).onSnapshot(snapshot => {
             const meta = snapshot.metadata || {};
-            // Cached snapshots may be stale. Keep the local copy until the server
-            // confirms the current menu, then apply that authoritative snapshot.
             if (meta.fromCache) {
               if (meta.hasPendingWrites) setSyncState('pending');
               else if (navigator.onLine === false) setSyncState('offline');
               return;
             }
-            cloudGotAnswer = true;
-            cloudServerReady = true;
-            clearTimeout(connectTimer);
-            if (snapshot.exists) {
-              const remote = snapshot.data();
-              const remoteVersion = Number(remote.version) || 0;
-              delete remote.updatedAt;
-              // Anything this device created or edited since the cloud last confirmed
-              // is only real here — the ledger knows which ids those are. A snapshot is
-              // allowed to change everything else, but it must never delete that work,
-              // and it must not resurrect a dish the admin deleted on this device while
-              // the write was blocked. Survives a reload, unlike a session flag.
-              const ledger = readLedger();
-              const localBefore = state.data || { products: [], categories: [] };
-              const protect = ledger.dirty
-                ? {
-                    products: (localBefore.products || []).filter(item => item && item.id && !ledger.products.includes(item.id)),
-                    categories: (localBefore.categories || []).filter(item => item && item.id && !ledger.categories.includes(item.id)),
-                    removedProducts: ledger.products.filter(id => !(localBefore.products || []).some(item => item && item.id === id)),
-                    removedCategories: ledger.categories.filter(id => !(localBefore.categories || []).some(item => item && item.id === id)),
-                  }
-                : null;
-              applyingRemote = true;
-              state.data = getParsedData(remote);
-              if (protect) {
-                ['products', 'categories'].forEach(field => {
-                  const removed = field === 'products' ? protect.removedProducts : protect.removedCategories;
-                  state.data[field] = (state.data[field] || []).filter(item => !(item && removed.includes(item.id)));
-                  protect[field].forEach(item => {
-                    if (!state.data[field].some(existing => existing && existing.id === item.id)) state.data[field].push(item);
-                  });
-                });
-              }
-              try { localStorage.setItem(STORAGE_KEYS.data, JSON.stringify(state.data)); } catch (e) {}
-              // A server snapshot (not the SDK cache) proves what the cloud holds.
-              if (!meta.fromCache) reconcileLedger(remote);
-              refreshAllFromData();
-              applyingRemote = false;
-              cloudSeeded = true;
-              if (!meta.fromCache && remoteVersion < state.data.version && isCloudAdmin()) pushToCloud();
-              // If this device still has unconfirmed work and it is allowed to write,
-              // publish it now — that is how an edit made while offline or before the
-              // rules were published finally reaches the menu without another save.
-              if (ledger.dirty && isCloudAdmin()) pushToCloud();
-            } else if (!meta.fromCache && !cloudSeeded) {
-              // The server itself says the document does not exist. Only that counts as
-              // permission to publish this device's copy: the SDK's very first callback
-              // often comes from its own cache and also reports "missing" on a clean
-              // browser or a fresh phone tab, and seeding on that used to push the empty
-              // built-in defaults over the real menu — the reason items and categories
-              // disappeared again after being added.
-              cloudSeeded = true;
-              // And never seed an empty menu; the first real publish happens through the
-              // admin panel, which writes this document anyway.
-              if ((state.data.products || []).length || (state.data.categories || []).length) pushToCloud();
-            }
-            // "Live" only when the cloud really matches this device; unconfirmed local
-            // work gets its own honest state instead of a green chip over a lost dish.
-            setSyncState(readLedger().dirty ? 'unsynced' : 'live');
+            const remote = snapshot.exists ? snapshot.data() : {};
+            cloudMetadata = remote;
+            cloudLegacyData = remote.storageFormat === 2 ? null : (snapshot.exists ? remote : null);
+            updateCloudReadiness();
           }, error => {
             cloudGotAnswer = true;
-            clearTimeout(connectTimer);
+            clearTimeout(cloudConnectTimer);
             applyingRemote = false;
             setSyncState(describeCloudError(error));
             console.error('[Zakho Menu] Firestore listener error, staying local:', error);
+          });
+          ['products', 'categories'].forEach(field => {
+            cloudDb.collection(cloudCollectionPath(field)).onSnapshot(snapshot => {
+              const meta = snapshot.metadata || {};
+              if (meta.fromCache) {
+                if (meta.hasPendingWrites) setSyncState('pending');
+                else if (navigator.onLine === false) setSyncState('offline');
+                return;
+              }
+              cloudRemoteItems[field] = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.data().id || doc.id }));
+              cloudCollectionsReady[field] = true;
+              updateCloudReadiness();
+            }, error => {
+              cloudGotAnswer = true;
+              clearTimeout(cloudConnectTimer);
+              setSyncState(describeCloudError(error));
+              console.error(`[Zakho Menu] Firestore ${field} listener failed:`, error);
+            });
           });
         };
         // ---- end Firebase sync ----
@@ -10466,10 +10566,7 @@
           });
         };
 
-        // One photo has to live inside the menu document, and Firestore caps a document
-        // at ~1 MiB — 3 or 4 camera shots at 1200px/0.82 blew past the safe-size guard, the
-        // push was skipped, and the dish never reached the cloud. So keep shrinking until
-        // the encoded image fits its share of the budget.
+        // Resize uploaded images before storing them with their menu item.
         const IMAGE_BUDGET_CHARS = 120000;
         const IMAGE_PASSES = [[1200, 0.82], [1000, 0.74], [860, 0.66], [720, 0.58], [600, 0.5]];
 
@@ -11127,7 +11224,7 @@
           });
         };
 
-        const initialize = () => {
+        const initialize = async () => {
           try {
             localStorage.removeItem('zakho-menu-offline-passhash');
             sessionStorage.removeItem('zakho-menu-admin');
@@ -11140,10 +11237,21 @@
           // Must run before startCloudSync() so Firebase picks up the right config.
           loadSavedIntegrationKeys();
 
+          try {
+            await restoreLocalImages(state.data);
+            await persistLocalImages(state.data);
+            localStorage.setItem(STORAGE_KEYS.data, JSON.stringify(buildLocalMenuCache(state.data)));
+          } catch (error) {
+            console.error('[Zakho Menu] Offline image storage could not be initialized:', error);
+            showToast('Offline photo cache unavailable', 'Menu sync can still work online, but photos may not be retained offline in this browser.', 'warning');
+          }
+
           // Persist menu migrations locally without saveData(); visitor browsers must
           // never push cleanup to the shared cloud document.
           if (purgedLegacyProductCount > 0) {
-            try { localStorage.setItem(STORAGE_KEYS.data, JSON.stringify(state.data)); } catch (e) {}
+            try { localStorage.setItem(STORAGE_KEYS.data, JSON.stringify(buildLocalMenuCache(state.data))); } catch (error) {
+              console.warn('[Zakho Menu] Could not cache the migrated menu:', error);
+            }
           }
 
           document.getElementById('languageControlSlot').appendChild(document.getElementById('languageSelector'));
