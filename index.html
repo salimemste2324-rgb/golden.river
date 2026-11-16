@@ -8804,7 +8804,8 @@
           const size = bytes >= 1024 * 1024
             ? `${(bytes / (1024 * 1024)).toFixed(2)} MB`
             : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-          const estimate = `Estimated menu data: ${size} / 900 KB safe publish target`;
+          const safeTargetKb = Math.floor(SAFE_MENU_DOCUMENT_BYTES / 1024);
+          const estimate = `Estimated menu data: ${size} / ${safeTargetKb} KB safe publish target`;
           hint.textContent = [baseHint, estimate].filter(Boolean).join(' · ');
           hint.style.display = 'block';
         };
@@ -8932,7 +8933,7 @@
         // this device with the smaller images.
         const SHRINK_PASSES = [[1000, 0.72], [800, 0.62], [640, 0.52], [480, 0.42], [360, 0.34], [280, 0.28]];
         const AUTO_COMPRESS_THRESHOLD_BYTES = 750000;
-        const SAFE_MENU_DOCUMENT_BYTES = 900000;
+        const SAFE_MENU_DOCUMENT_BYTES = 1024 * 1024 - 16 * 1024;
 
         const shrinkPhoto = (dataUrl, targetChars) => new Promise(resolve => {
           const source = String(dataUrl || '');
@@ -9015,7 +9016,7 @@
                 // dish, and the next remote snapshot then quietly dropped it again.
                 // The ledger keeps the work safe on this device until it can go out.
                 setSyncState('toobig');
-                showToast('Not published — menu too large', `Saved on this device, but the estimated menu size is ${Math.round(size / 1024)} KB after photo compression. Use fewer or smaller photos.`, 'warning');
+                showToast('Not published — menu too large', `Saved on this device, but the estimated menu size is ${Math.round(size / 1024)} KB after photo compression. The safe Firestore limit is ${Math.floor(SAFE_MENU_DOCUMENT_BYTES / 1024)} KB.`, 'warning');
                 console.warn('[Zakho Menu] Menu is ~' + Math.round(size / 1024) + 'KB after photo compression, over the safe Firestore document limit.');
                 return;
               }
@@ -10466,7 +10467,7 @@
         };
 
         // One photo has to live inside the menu document, and Firestore caps a document
-        // at ~1 MiB — 3 or 4 camera shots at 1200px/0.82 blew past the 900 KB guard, the
+        // at ~1 MiB — 3 or 4 camera shots at 1200px/0.82 blew past the safe-size guard, the
         // push was skipped, and the dish never reached the cloud. So keep shrinking until
         // the encoded image fits its share of the budget.
         const IMAGE_BUDGET_CHARS = 120000;
