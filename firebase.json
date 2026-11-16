@@ -6,6 +6,7 @@
     "public": ".",
     "ignore": [
       "firebase.json",
+      "**/*.log",
       ".firebaserc",
       ".gitignore",
       "firestore.rules",
