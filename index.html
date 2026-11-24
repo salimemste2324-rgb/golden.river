@@ -16,6 +16,10 @@
     <link rel="preload" as="image" href="cave-view.jpg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700;800;900&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Scheherazade+New:wght@400;500;600;700&display=swap"
       rel="stylesheet"
@@ -1755,7 +1759,7 @@
       }
 
       body:not(.admin-mode) {
-        --bg: #193A3D;
+        --bg: #011426;
         --bg-strong: #151311;
         --panel: #1C1915;
         --panel-strong: #211D17;
@@ -1771,7 +1775,7 @@
         background:
           radial-gradient(ellipse at 12% 12%, rgba(198, 165, 104, 0.1), transparent 34%),
           radial-gradient(ellipse at 88% 38%, rgba(198, 165, 104, 0.09), transparent 32%),
-          #193A3D;
+          #011426;
         color: #F5F0E6;
       }
 
@@ -1779,7 +1783,7 @@
         position: relative;
         isolation: isolate;
         min-height: 100vh;
-        background: linear-gradient(145deg, #193A3D 0%, #193A3D 52%, #193A3D 100%);
+        background: linear-gradient(145deg, #011426 0%, #011426 52%, #011426 100%);
       }
 
       body:not(.admin-mode) .page-shell::before {
@@ -7660,7 +7664,6 @@
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
@@ -8698,9 +8701,10 @@
             ['products', 'categories'].forEach(field => {
               (data[field] || []).forEach(item => {
                 if (!item || !item.id || (typeof item.image === 'string' && item.image.startsWith('data:image/'))) return;
+                const imageAtRequest = item.image;
                 const request = store.get(localImageKey(field, item));
                 request.onsuccess = () => {
-                  if (typeof request.result === 'string') item.image = request.result;
+                  if (item.image === imageAtRequest && typeof request.result === 'string') item.image = request.result;
                 };
               });
             });
@@ -8718,6 +8722,38 @@
             });
           });
           return cached;
+        };
+
+        const restoreStartupImages = async () => {
+          const startupData = state.data;
+          const hasInlineImages = ['products', 'categories'].some(field =>
+            startupData[field].some(item => item && typeof item.image === 'string' && item.image.startsWith('data:image/'))
+          );
+          try {
+            await restoreLocalImages(startupData);
+            if (state.data !== startupData) return;
+            if (hasInlineImages) await persistLocalImages(startupData);
+            try {
+              localStorage.setItem(STORAGE_KEYS.data, JSON.stringify(buildLocalMenuCache(state.data)));
+            } catch (error) {
+              console.warn('[Zakho Menu] Could not cache the restored menu:', error);
+            }
+
+            const productsById = new Map(startupData.products.map(product => [String(product.id), product]));
+            menuGrid.querySelectorAll('.product-card[data-product-id]').forEach(card => {
+              const product = productsById.get(card.dataset.productId);
+              const image = card.querySelector('img');
+              if (product && product.image && image) image.src = product.image;
+            });
+            const productModal = document.getElementById('productModal');
+            if (productModal.classList.contains('show')) {
+              const product = productsById.get(productModal.dataset.productId);
+              if (product && product.image) document.getElementById('modalImage').src = product.image;
+            }
+          } catch (error) {
+            console.error('[Zakho Menu] Offline image storage could not be initialized:', error);
+            showToast('Offline photo cache unavailable', 'Menu sync can still work online, but photos may not be retained offline in this browser.', 'warning');
+          }
         };
 
         const writeLocalMenu = data => {
@@ -9186,18 +9222,22 @@
         };
 
         const refreshAllFromData = () => {
-          fillCategorySelect();
-          renderCategoryFilters();
-          renderMenu();
+          if (state.adminLoggedIn && document.body.classList.contains('admin-mode')) {
+            fillCategorySelect();
+            // Don't clobber a settings form the admin is currently editing.
+            const active = document.activeElement;
+            const editingSettings = active && active.closest && active.closest('#settingsForm');
+            if (!editingSettings) populateSettingsForm();
+          }
+          applyLanguage();
+          updateLandingContent && updateLandingContent();
+        };
+
+        const renderAdminDataViews = () => {
+          if (!state.adminLoggedIn || !document.body.classList.contains('admin-mode')) return;
           renderProductsTable();
           renderCategoryTable();
           renderOverviewStats();
-          // Don't clobber a settings form the admin is currently editing.
-          const active = document.activeElement;
-          const editingSettings = active && active.closest && active.closest('#settingsForm');
-          if (!editingSettings) populateSettingsForm();
-          applyLanguage();
-          updateLandingContent && updateLandingContent();
         };
 
         let cloudGotAnswer = false;
@@ -9290,6 +9330,7 @@
         let productRevealObserver;
         let categorySwipeStart;
         let suppressProductClickUntil = 0;
+        let menuRenderFrame = 0;
         let categoryFilterSignature = '';
         let lastRenderedRoute = '';
 
@@ -9429,7 +9470,7 @@
           return name;
         };
 
-        const applyLanguage = () => {
+        const applyLanguage = ({ renderMenuContent = true } = {}) => {
           state.lang = readLanguage();
           setDocumentTheme();
           populateFormTranslation();
@@ -9437,12 +9478,11 @@
           languageSelector.value = state.lang;
           syncLanguageControl();
           document.title = `${brandName(state.data.settings.restaurantName)} | Digital Menu`;
-          renderCategoryFilters();
-          renderMenu();
-          renderProductsTable();
-          renderCategoryTable();
-          populateSettingsForm();
-          renderOverviewStats();
+          if (renderMenuContent) renderMenu();
+          if (state.adminLoggedIn && document.body.classList.contains('admin-mode')) {
+            populateSettingsForm();
+            renderAdminDataViews();
+          }
           renderBrandNames();
           if (window.updateLandingContent) window.updateLandingContent();
         };
@@ -9639,7 +9679,6 @@
             element.classList.add('is-entering');
             window.setTimeout(() => element.classList.remove('is-entering'), 500);
           });
-          if (toCategory === 'all') animateCategoryCards();
         };
 
         const navigateCategoryBySwipe = deltaX => {
@@ -9675,6 +9714,7 @@
 
           // The intro/landing screen is a customer-facing door — never show it over the admin panel.
           const landingOverlay = document.getElementById('landingOverlay');
+          const landingIntroOpen = landingOverlay && !landingOverlay.classList.contains('hidden');
           if (adminRoute) {
             if (landingOverlay) landingOverlay.classList.add('hidden');
           }
@@ -9683,6 +9723,12 @@
             const productModal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
             if (productModal) productModal.hide();
             adminDashboard.classList.toggle('visible', state.adminLoggedIn);
+            if (state.adminLoggedIn) {
+              fillCategorySelect();
+              populateSettingsForm();
+              populateIntegrationForm();
+              renderAdminDataViews();
+            }
             if (!state.adminLoggedIn) {
               clearLoginError();
               bootstrap.Modal.getOrCreateInstance(document.getElementById('adminLoginModal'), {
@@ -9703,22 +9749,27 @@
           state.selectedCategory = getCategoryFromRoute();
           renderMenu();
           animateCategoryRoute(previousCategory, state.selectedCategory);
-          if (state.selectedCategory !== 'all') {
+          if (!landingIntroOpen && state.selectedCategory !== 'all') {
             const activeCategoryCard = categoryFilters.querySelector('.category-card.is-selected');
             activeCategoryCard?.closest('.category-tile')?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             menuGrid.querySelector('.product-card')?.scrollIntoView({
               behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
               block: 'center',
             });
-          } else if (window.location.hash.startsWith('#menu')) {
+          } else if (!landingIntroOpen && window.location.hash.startsWith('#menu')) {
             document.getElementById('menu').scrollIntoView({ behavior: 'smooth', block: 'start' });
           }
         };
 
         const renderCategoryFilters = () => {
           const categories = getVisibleMenuCategories();
+          const productCounts = new Map();
+          state.data.products.forEach(product => {
+            if (product.available === false) return;
+            productCounts.set(product.categoryId, (productCounts.get(product.categoryId) || 0) + 1);
+          });
           const categoryDetails = categories.map(cat => {
-            const count = state.data.products.filter(product => product.categoryId === cat.id && product.available !== false).length;
+            const count = productCounts.get(cat.id) || 0;
             const name = getCategoryName(cat);
             return { cat, count, name, icon: getCategoryIcon(cat) };
           });
@@ -9805,6 +9856,10 @@
         };
 
         const renderMenu = () => {
+          if (menuRenderFrame) {
+            cancelAnimationFrame(menuRenderFrame);
+            menuRenderFrame = 0;
+          }
           renderCategoryFilters();
           const selectedCategory = state.data.categories.find(category => category.id === state.selectedCategory && category.visible !== false);
           if (state.selectedCategory !== 'all' && !selectedCategory) {
@@ -9819,6 +9874,7 @@
 
           const products = getFilteredProducts();
           if (!products.length) {
+            productRevealObserver?.disconnect();
             menuGrid.innerHTML = '';
             // "Nothing published yet" and "your filter matched nothing" are different
             // messages, so the empty state carries both variants and shows one.
@@ -9829,8 +9885,9 @@
             return;
           }
           emptyState.classList.remove('visible');
-          menuGrid.innerHTML = products.map(product => {
-            const category = state.data.categories.find(cat => cat.id === product.categoryId);
+          const categoriesById = new Map(state.data.categories.map(category => [category.id, category]));
+          menuGrid.innerHTML = products.map((product, index) => {
+            const category = categoriesById.get(product.categoryId);
             const name = getLocalizedValue(product.name, state.lang);
             const description = getLocalizedValue(product.description, state.lang);
             const categoryName = category ? getCategoryName(category) : '';
@@ -9845,7 +9902,7 @@
             return `
               <article class="product-card motion-reveal ${product.available ? '' : 'unavailable'}" data-product-id="${product.id}">
                 <div class="product-image-wrap">
-                  <img src="${product.image || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80'}" alt="${name}" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80';" />
+                  <img src="${product.image || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80'}" alt="${name}" loading="${index < 2 ? 'eager' : 'lazy'}" fetchpriority="${index === 0 ? 'high' : 'auto'}" decoding="async" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80';" />
                 </div>
                 <div class="product-body">
                   <div class="product-topline">
@@ -9873,13 +9930,13 @@
 
           revealLoadedImages(menuGrid);
           animateProductCards();
-          menuGrid.querySelectorAll('.product-card').forEach(card => {
-            card.addEventListener('click', () => {
-              if (Date.now() < suppressProductClickUntil) return;
-              const id = card.dataset.productId;
-              const product = state.data.products.find(item => item.id === id);
-              openProductModal(product);
-            });
+        };
+
+        const scheduleMenuRender = () => {
+          if (menuRenderFrame) return;
+          menuRenderFrame = requestAnimationFrame(() => {
+            menuRenderFrame = 0;
+            renderMenu();
           });
         };
 
@@ -9896,6 +9953,7 @@
           const description = getLocalizedValue(product.description, state.lang);
           const categoryName = category ? getCategoryName(category) : '';
           const modalImage = document.getElementById('modalImage');
+          document.getElementById('productModal').dataset.productId = String(product.id);
           modalImage.alt = title;
           modalImage.onerror = () => {
             modalImage.onerror = null;
@@ -9907,8 +9965,34 @@
           document.getElementById('modalTag').textContent = product.featured ? translate('featuredText') : product.popular ? translate('popularText') : product.new ? translate('newText') : translate('availableText');
           document.getElementById('modalPrice').textContent = toCurrency(product.price);
           document.getElementById('modalDescription').textContent = description;
-          const modal = new bootstrap.Modal(document.getElementById('productModal'));
+          const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('productModal'));
           modal.show();
+        };
+
+        let chartLibraryPromise = null;
+        let chartRenderPending = false;
+
+        const loadChartLibrary = () => {
+          if (window.Chart) return Promise.resolve(window.Chart);
+          if (!chartLibraryPromise) {
+            chartLibraryPromise = new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              let timeoutId;
+              script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+              script.onload = () => {
+                window.clearTimeout(timeoutId);
+                if (window.Chart) resolve(window.Chart);
+                else reject(new Error('Chart.js loaded without initializing.'));
+              };
+              script.onerror = () => {
+                window.clearTimeout(timeoutId);
+                reject(new Error('Chart.js failed to load.'));
+              };
+              timeoutId = window.setTimeout(() => reject(new Error('Chart.js load timed out.')), 12000);
+              document.head.appendChild(script);
+            });
+          }
+          return chartLibraryPromise;
         };
 
         const renderOverviewStats = () => {
@@ -9934,7 +10018,21 @@
           `).join('');
 
           animateCounters();
-          renderCharts();
+          if (window.Chart) {
+            renderCharts();
+            return;
+          }
+          if (chartRenderPending) return;
+          chartRenderPending = true;
+          loadChartLibrary().then(() => {
+            chartRenderPending = false;
+            renderCharts();
+          }).catch(error => {
+            chartRenderPending = false;
+            chartLibraryPromise = null;
+            console.error('[Zakho Menu] Could not load admin charts:', error);
+            showToast('Charts unavailable', 'The admin dashboard is still available, but its charts could not be loaded.', 'warning');
+          });
         };
 
         const animateCounters = () => {
@@ -9954,43 +10052,57 @@
         };
 
         const renderCharts = () => {
-          if (state.charts.categoryChart) state.charts.categoryChart.destroy();
-          if (state.charts.availabilityChart) state.charts.availabilityChart.destroy();
-
           const categoryLabels = state.data.categories.map(cat => getCategoryName(cat));
-          const categoryCounts = state.data.categories.map(cat => state.data.products.filter(item => item.categoryId === cat.id).length);
-          const categoryCtx = document.getElementById('categoryChart');
-          state.charts.categoryChart = new Chart(categoryCtx, {
-            type: 'bar',
-            data: {
-              labels: categoryLabels,
-              datasets: [{
-                label: 'Products',
-                data: categoryCounts,
-                backgroundColor: ['#7E93A6', '#2FBF8F', '#5D6A78', '#E0A63C', '#9BB0C1', '#46505B', '#C6A568'],
-                borderRadius: 4,
-              }],
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-            }
+          const categoryCountById = new Map();
+          const availabilityCounts = [0, 0];
+          state.data.products.forEach(item => {
+            categoryCountById.set(item.categoryId, (categoryCountById.get(item.categoryId) || 0) + 1);
+            availabilityCounts[item.available ? 0 : 1] += 1;
           });
+          const categoryCounts = state.data.categories.map(cat => categoryCountById.get(cat.id) || 0);
+          const categoryCtx = document.getElementById('categoryChart');
+          if (state.charts.categoryChart) {
+            state.charts.categoryChart.data.labels = categoryLabels;
+            state.charts.categoryChart.data.datasets[0].data = categoryCounts;
+            state.charts.categoryChart.update();
+          } else {
+            state.charts.categoryChart = new Chart(categoryCtx, {
+              type: 'bar',
+              data: {
+                labels: categoryLabels,
+                datasets: [{
+                  label: 'Products',
+                  data: categoryCounts,
+                  backgroundColor: ['#7E93A6', '#2FBF8F', '#5D6A78', '#E0A63C', '#9BB0C1', '#46505B', '#C6A568'],
+                  borderRadius: 4,
+                }],
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+              }
+            });
+          }
 
           const availabilityCtx = document.getElementById('availabilityChart');
-          state.charts.availabilityChart = new Chart(availabilityCtx, {
-            type: 'doughnut',
-            data: {
-              labels: ['Available', 'Unavailable'],
-              datasets: [{
-                data: [state.data.products.filter(item => item.available).length, state.data.products.filter(item => !item.available).length],
-                backgroundColor: ['#2FBF8F', '#E06A5A'],
-              }],
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-          });
+          if (state.charts.availabilityChart) {
+            state.charts.availabilityChart.data.datasets[0].data = availabilityCounts;
+            state.charts.availabilityChart.update();
+          } else {
+            state.charts.availabilityChart = new Chart(availabilityCtx, {
+              type: 'doughnut',
+              data: {
+                labels: ['Available', 'Unavailable'],
+                datasets: [{
+                  data: availabilityCounts,
+                  backgroundColor: ['#2FBF8F', '#E06A5A'],
+                }],
+              },
+              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+          }
         };
 
         const setupLandingPage = () => {
@@ -10016,6 +10128,8 @@
 
           // Every visit opens on the cave, then hands over to the menu
           overlay.classList.remove('hidden');
+          // A #menu URL can scroll the page behind the fixed cave intro.
+          window.scrollTo(0, 0);
 
           // Menu button - navigate to menu
           menuBtn.addEventListener('click', () => {
@@ -10709,10 +10823,7 @@
               }
               state.data.categories = state.data.categories.filter(cat => cat.id !== categoryId);
               saveData();
-              renderMenu();
-              renderCategoryTable();
-              renderProductsTable();
-              renderOverviewStats();
+              refreshAllFromData();
               showToast('Category updated', 'The category and product assignments have been updated.', 'success');
             });
             return;
@@ -10730,7 +10841,6 @@
             state.data.categories = state.data.categories.filter(cat => cat.id !== categoryId);
             saveData();
             renderCategoryTable();
-            renderCategoryFilters();
             renderMenu();
             renderOverviewStats();
             showToast('Category deleted', 'The category was removed.', 'success');
@@ -10809,7 +10919,6 @@
 
           saveData();
           fillCategorySelect();
-          renderCategoryFilters();
           renderCategoryTable();
           renderMenu();
           renderOverviewStats();
@@ -10862,10 +10971,6 @@
             purgedLegacyProductCount = 0;
             saveData();
             applyLanguage();
-            renderMenu();
-            renderProductsTable();
-            renderCategoryTable();
-            renderOverviewStats();
             resetProductForm();
             resetCategoryForm();
             populateSettingsForm();
@@ -10984,6 +11089,13 @@
         };
 
         const attachEvents = () => {
+          menuGrid.addEventListener('click', event => {
+            const card = event.target.closest('.product-card');
+            if (!card || Date.now() < suppressProductClickUntil) return;
+            const product = state.data.products.find(item => String(item.id) === card.dataset.productId);
+            openProductModal(product);
+          });
+
           menuSearchToggle.addEventListener('click', () => {
             const isOpen = menuSearchToggle.getAttribute('aria-expanded') === 'true';
             menuSearchToggle.setAttribute('aria-expanded', String(!isOpen));
@@ -11000,7 +11112,7 @@
 
           productSearchInput.addEventListener('input', event => {
             state.searchQuery = event.target.value;
-            renderMenu();
+            scheduleMenuRender();
           });
           productSearchInput.addEventListener('keydown', event => {
             if (event.key === 'Escape') menuSearchToggle.click();
@@ -11237,15 +11349,6 @@
           // Must run before startCloudSync() so Firebase picks up the right config.
           loadSavedIntegrationKeys();
 
-          try {
-            await restoreLocalImages(state.data);
-            await persistLocalImages(state.data);
-            localStorage.setItem(STORAGE_KEYS.data, JSON.stringify(buildLocalMenuCache(state.data)));
-          } catch (error) {
-            console.error('[Zakho Menu] Offline image storage could not be initialized:', error);
-            showToast('Offline photo cache unavailable', 'Menu sync can still work online, but photos may not be retained offline in this browser.', 'warning');
-          }
-
           // Persist menu migrations locally without saveData(); visitor browsers must
           // never push cleanup to the shared cloud document.
           if (purgedLegacyProductCount > 0) {
@@ -11258,21 +11361,13 @@
           setupLanguageControl();
           setupLandingPage();
           state.selectedCategory = getCategoryFromRoute();
-          fillCategorySelect();
-          renderCategoryFilters();
-          renderMenu();
-          renderProductsTable();
-          renderCategoryTable();
-          renderOverviewStats();
-          populateSettingsForm();
-          populateIntegrationForm();
-          setDocumentTheme();
-          applyLanguage();
+          applyLanguage({ renderMenuContent: false });
           attachEvents();
           renderApplicationRoute();
           startCloudSync();
           observeAuth();
           updateIntegrationStatus();
+          restoreStartupImages();
         };
 
         initialize();
