@@ -1850,18 +1850,30 @@
       }
 
       body:not(.admin-mode) .public-brand-lockup {
-        position: relative;
-        left: auto;
+        position: absolute;
+        top: 50%;
+        left: 50%;
         flex: 0 1 auto;
         justify-content: center;
+        transform: translate(-50%, -50%);
+      }
+
+      body:not(.admin-mode) .public-brand-bar .public-header-actions {
+        position: absolute;
+        top: 28px;
+        left: 0;
+        right: 0;
+        z-index: 1;
+        display: block;
+        flex: none;
         transform: none;
       }
 
-      body:not(.admin-mode) .public-brand-bar > .menu-search-toggle {
-        position: relative;
+      body:not(.admin-mode) .public-brand-bar .public-header-actions > .menu-search-toggle,
+      body:not(.admin-mode) .public-brand-bar .public-header-actions > .menu-back-selection {
+        position: absolute;
         top: auto;
         inset-inline-start: auto;
-        z-index: 1;
         flex: 0 0 46px;
         width: 46px;
         height: 46px;
@@ -1873,23 +1885,46 @@
         translate: none;
       }
 
-      body:not(.admin-mode) .public-brand-bar > .menu-search-toggle i {
+      body:not(.admin-mode) .public-brand-bar .public-header-actions > .menu-back-selection {
+        top: 66px;
+        left: 20px;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+      }
+
+      body.rtl .menu-back-selection i {
+        transform: scaleX(-1);
+      }
+
+      body:not(.admin-mode) .public-brand-bar .public-header-actions > .menu-search-toggle {
+        top: 0;
+        left: 20px;
+      }
+
+      body:not(.admin-mode) .public-brand-bar .public-header-actions > #languageControlSlot {
+        position: absolute;
+        top: 0;
+        right: 20px;
+      }
+
+      body:not(.admin-mode) .public-brand-bar .public-header-actions > button i {
         color: #E5D2A3;
         filter: drop-shadow(0 0 7px rgba(198, 165, 104, 0.58));
       }
 
-      body:not(.admin-mode) .public-brand-bar > .menu-search-toggle:hover,
-      body:not(.admin-mode) .public-brand-bar > .menu-search-toggle:focus-visible {
+      body:not(.admin-mode) .public-brand-bar .public-header-actions > button:hover,
+      body:not(.admin-mode) .public-brand-bar .public-header-actions > button:focus-visible {
         border-color: #E5D2A3;
         box-shadow: 0 0 0 3px rgba(198, 165, 104, 0.13), 0 0 24px rgba(198, 165, 104, 0.2);
       }
 
-      body:not(.admin-mode) .public-brand-bar > .menu-search-toggle:hover i,
-      body:not(.admin-mode) .public-brand-bar > .menu-search-toggle:focus-visible i {
+      body:not(.admin-mode) .public-brand-bar .public-header-actions > button:hover i,
+      body:not(.admin-mode) .public-brand-bar .public-header-actions > button:focus-visible i {
         filter: drop-shadow(0 0 10px rgba(229, 210, 163, 0.82));
       }
 
-      body:not(.admin-mode) .public-brand-bar > .menu-search-toggle[aria-expanded="true"] {
+      body:not(.admin-mode) .public-brand-bar .public-header-actions > .menu-search-toggle[aria-expanded="true"] {
         border-color: #E5D2A3;
         background: linear-gradient(145deg, rgba(198, 165, 104, 0.18), rgba(198, 165, 104, 0.14) 58%, rgba(198, 165, 104, 0.11));
         color: #fff;
@@ -1975,13 +2010,13 @@
         position: absolute;
         z-index: 100;
         top: calc(100% + 10px);
-        inset-inline-end: 0;
         display: grid;
         box-sizing: border-box;
         width: min(210px, calc(100vw - 24px));
         max-inline-size: calc(100vw - 24px);
         max-block-size: calc(100dvh - 24px);
         overflow-y: auto;
+        right: 0;
         gap: 5px;
         padding: 8px;
         border: 1px solid rgba(255, 255, 255, 0.12);
@@ -3537,7 +3572,7 @@
         }
 
         .restaurant-mark img {
-          height: 96px;
+          height: 90px;
         }
 
         #languageControlSlot .lang-select {
@@ -6831,6 +6866,13 @@
           </div>
           <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
         </button>
+        <button id="landingSweetHookahBtn" class="landing-primary-btn" type="button">
+          <div class="landing-primary-btn-content">
+            <i class="fa-solid fa-smoking landing-menu-icon" aria-hidden="true"></i>
+            <span id="landingSweetHookahLabel" data-i18n="landingSweetHookah">Sweet And Hookah</span>
+          </div>
+          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </button>
 
         <div class="landing-secondary-links">
           <a href="https://www.instagram.com/goldenriver_zakho?vrfl=MWh6NDBtODY5aDV4Zg==" class="landing-link" id="landingInstagram" target="_blank" rel="noopener noreferrer">
@@ -6902,14 +6944,19 @@
 
       <main>
         <section class="public-brand-bar container-fluid-custom" aria-label="Restaurant menu">
-          <button id="menuSearchToggle" class="menu-view-button menu-search-toggle" type="button" aria-label="Search menu items" aria-expanded="false" aria-controls="productSearch">
-            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-          </button>
+          <div class="public-header-actions">
+            <button id="menuSearchToggle" class="menu-view-button menu-search-toggle" type="button" aria-label="Search menu items" aria-expanded="false" aria-controls="productSearch">
+              <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            </button>
+            <div id="languageControlSlot"></div>
+            <button id="backToMenuSelection" class="menu-view-button menu-back-selection" type="button" aria-label="Back">
+              <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            </button>
+          </div>
           <div class="public-brand-lockup">
             <span class="restaurant-mark"><img src="logo.png" alt="Golden River Hotel &amp; Restaurant" width="600" height="580" /></span>
             <div class="public-brand-name" id="publicBrandName">Golden River</div>
           </div>
-          <div id="languageControlSlot"></div>
         </section>
 
         <section id="home" class="hero">
@@ -7504,6 +7551,13 @@
                       </div>
                     </div>
                     <div class="form-grid">
+                      <div class="form-field full">
+                        <label for="categoryMenuSection" data-i18n="categoryMenuSection">Menu section</label>
+                        <select id="categoryMenuSection" class="form-control">
+                          <option value="main" data-i18n="landingMenuLabel">Menu</option>
+                          <option value="sweet-hookah" data-i18n="landingSweetHookah">Sweet And Hookah</option>
+                        </select>
+                      </div>
                       <div class="form-field">
                         <label for="categoryOrder" data-i18n="categoryOrder">Display order</label>
                         <input id="categoryOrder" type="number" min="1" value="1" />
@@ -7521,6 +7575,7 @@
                             <button class="category-icon-choice" type="button" data-icon="fa-solid fa-burger" aria-label="Burger icon" title="Burger"><i class="fa-solid fa-burger" aria-hidden="true"></i></button>
                             <button class="category-icon-choice" type="button" data-icon="fa-solid fa-bread-slice" aria-label="Bread icon" title="Bread"><i class="fa-solid fa-bread-slice" aria-hidden="true"></i></button>
                             <button class="category-icon-choice" type="button" data-icon="fa-solid fa-cake-candles" aria-label="Dessert icon" title="Dessert"><i class="fa-solid fa-cake-candles" aria-hidden="true"></i></button>
+                            <button class="category-icon-choice" type="button" data-icon="fa-solid fa-smoking" aria-label="Hookah icon" title="Hookah"><i class="fa-solid fa-smoking" aria-hidden="true"></i></button>
                             <button class="category-icon-choice" type="button" data-icon="fa-solid fa-martini-glass-citrus" aria-label="Drink icon" title="Drink"><i class="fa-solid fa-martini-glass-citrus" aria-hidden="true"></i></button>
                             <button class="category-icon-choice" type="button" data-icon="fa-solid fa-utensils" aria-label="Utensils icon" title="Utensils"><i class="fa-solid fa-utensils" aria-hidden="true"></i></button>
                           </div>
@@ -7572,6 +7627,7 @@
                     <thead>
                       <tr>
                         <th data-i18n="tableName">Name</th>
+                        <th data-i18n="tableMenuSection">Menu section</th>
                         <th data-i18n="tableIcon">Icon</th>
                         <th data-i18n="tableOrder">Order</th>
                         <th data-i18n="tableStatus">Status</th>
@@ -7739,7 +7795,7 @@
         };
 
         const defaultData = {
-          version: 13,
+          version: 16,
           settings: {
             restaurantName: 'Golden River',
             logo: 'Golden River',
@@ -7818,6 +7874,48 @@
               order: 5,
               image: '',
             },
+            {
+              id: 'sweet-desserts',
+              menuSection: 'sweet-hookah',
+              name: {
+                en: 'Sweet',
+                ar: 'حلويات',
+                bad: 'شیرینی',
+                tr: 'Tatlılar',
+              },
+              icon: 'fa-solid fa-cake-candles',
+              visible: true,
+              order: 1,
+              image: '',
+            },
+            {
+              id: 'sweet-hookah',
+              menuSection: 'sweet-hookah',
+              name: {
+                en: 'Hookah',
+                ar: 'أركيلة',
+                bad: 'ناركيله',
+                tr: 'Nargile',
+              },
+              icon: 'fa-solid fa-smoking',
+              visible: true,
+              order: 2,
+              image: '',
+            },
+            {
+              id: 'sweet-hookah-drinks',
+              menuSection: 'sweet-hookah',
+              name: {
+                en: 'Drink',
+                ar: 'مشروبات',
+                bad: 'خواردنەوە',
+                tr: 'İçecekler',
+              },
+              icon: 'fa-solid fa-martini-glass-citrus',
+              visible: true,
+              order: 3,
+              image: '',
+            },
           ],
           products: [],
         };
@@ -7829,6 +7927,7 @@
           lastLoginProvider: '',
           syncStatus: 'off',
           selectedCategory: 'all',
+          selectedMenuSection: 'main',
           menuView: 'grid',
           searchQuery: '',
           sortMode: 'featured',
@@ -7932,6 +8031,7 @@
             productListTitle: 'Current menu',
             tableName: 'Name',
             tablePhoto: 'Photo',
+            tableMenuSection: 'Menu section',
             tableIcon: 'Icon',
             tableCategory: 'Category',
             tablePrice: 'Price',
@@ -7946,6 +8046,7 @@
             categoryNameAr: 'Category name (Arabic)',
             categoryNameBad: 'Category name (Kurdish Badini)',
             categoryNameTr: 'Category name (Turkish)',
+            categoryMenuSection: 'Menu section',
             categoryIcon: 'Icon class',
             categoryOrder: 'Display order',
             categoryImage: 'Category image',
@@ -8004,6 +8105,8 @@
             landingTitle: 'Golden River',
             landingSubtitle: 'HOTEL & RESTAURANT',
             landingMenuLabel: 'Menu',
+            landingSweetHookah: 'Sweet And Hookah',
+            backToMenuSelection: 'Back',
             landingInstagram: 'Instagram',
             landingLocation: 'Find Us',
             landingTikTok: 'TikTok',
@@ -8106,6 +8209,7 @@
             productListTitle: 'القائمة الحالية',
             tableName: 'الاسم',
             tablePhoto: 'الصورة',
+            tableMenuSection: 'القسم',
             tableIcon: 'الأيقونة',
             tableCategory: 'الفئة',
             tablePrice: 'السعر',
@@ -8120,6 +8224,7 @@
             categoryNameAr: 'اسم الفئة (العربية)',
             categoryNameBad: 'اسم الفئة (كردي باديني)',
             categoryNameTr: 'اسم الفئة (التركية)',
+            categoryMenuSection: 'قسم القائمة',
             categoryIcon: 'رمز الفئة',
             categoryOrder: 'ترتيب العرض',
             categoryImage: 'صورة الفئة',
@@ -8178,6 +8283,8 @@
             landingTitle: 'Golden River',
             landingSubtitle: 'HOTEL & RESTAURANT',
             landingMenuLabel: 'عرض القائمة',
+            landingSweetHookah: 'الحلويات والأركيلة',
+            backToMenuSelection: 'رجوع',
             landingInstagram: 'إنستغرام',
             landingLocation: 'اعثر علينا',
             landingTikTok: 'تيك توك',
@@ -8274,6 +8381,7 @@
             productListTitle: 'لیستەیا ئێستا',
             tableName: 'ناڤ',
             tablePhoto: 'وێنە',
+            tableMenuSection: 'بەش',
             tableIcon: 'نیشانە',
             tableCategory: 'بەش',
             tablePrice: 'بها',
@@ -8288,6 +8396,7 @@
             categoryNameAr: 'ناڤێ بەش (عەرەبی)',
             categoryNameBad: 'ناڤێ بەش (کوردیی بادینی)',
             categoryNameTr: 'ناڤێ بەش (تورکی)',
+            categoryMenuSection: 'بەشێ مێنوی',
             categoryIcon: 'ئایکۆنێ بەش',
             categoryOrder: 'ڕیز',
             categoryImage: 'وێنەی بەش',
@@ -8346,6 +8455,8 @@
             landingTitle: 'Golden River',
             landingSubtitle: 'HOTEL & RESTAURANT',
             landingMenuLabel: 'لیستە ببینە',
+            landingSweetHookah: 'شیرینی و ناركيله',
+            backToMenuSelection: 'ڤەگەڕان',
             landingInstagram: 'ئینستاگرام',
             landingLocation: 'دۆزینا ئێمە',
             landingTikTok: 'تیکتۆک',
@@ -8442,6 +8553,7 @@
             productListTitle: 'Mevcut menü',
             tableName: 'Ad',
             tablePhoto: 'Fotoğraf',
+            tableMenuSection: 'Menü bölümü',
             tableIcon: 'Simge',
             tableCategory: 'Kategori',
             tablePrice: 'Fiyat',
@@ -8456,6 +8568,7 @@
             categoryNameAr: 'Kategori adı (Arapça)',
             categoryNameBad: 'Kategori adı (Kürtçe Badini)',
             categoryNameTr: 'Kategori adı (Türkçe)',
+            categoryMenuSection: 'Menü bölümü',
             categoryIcon: 'Simge sınıfı',
             categoryOrder: 'Sıralama',
             categoryImage: 'Kategori görseli',
@@ -8514,6 +8627,8 @@
             landingTitle: 'Golden River',
             landingSubtitle: 'HOTEL & RESTAURANT',
             landingMenuLabel: 'Menü',
+            landingSweetHookah: 'Tatlı ve Nargile',
+            backToMenuSelection: 'Geri',
             landingInstagram: 'Instagram',
             landingLocation: 'Bizi Bulun',
             landingTikTok: 'TikTok',
@@ -8535,6 +8650,8 @@
             const categories = Array.isArray(parsed.categories) ? parsed.categories : structuredClone(defaultData.categories);
             const products = Array.isArray(parsed.products) ? parsed.products : structuredClone(defaultData.products);
             categories.forEach(category => {
+              if (!category) return;
+              category.menuSection = category.menuSection === 'sweet-hookah' ? 'sweet-hookah' : 'main';
               const legacyName = LEGACY_BADINI_CATEGORY_NAMES[category && category.id];
               const defaultCategory = defaultData.categories.find(item => item.id === (category && category.id));
               if (legacyName && category.name && category.name.bad === legacyName && defaultCategory) {
@@ -8646,8 +8763,64 @@
               products.length = 0;
               products.push(...remainingProducts);
             }
+            if (storedVersion < 14) {
+              const sweetHookahDefaults = defaultData.categories.filter(category => category.menuSection === 'sweet-hookah');
+              sweetHookahDefaults.forEach(source => {
+                const exists = categories.some(category => {
+                  if (!category || category.menuSection !== 'sweet-hookah') return false;
+                  if (category.id === source.id) return true;
+                  return ['en', 'ar', 'bad', 'tr'].some(language => {
+                    const existingName = category.name && category.name[language];
+                    return typeof existingName === 'string'
+                      && existingName.trim().toLowerCase() === source.name[language].trim().toLowerCase();
+                  });
+                });
+                if (exists) return;
+                const categoryToAdd = structuredClone(source);
+                categoryToAdd.order = Math.max(
+                  0,
+                  ...categories
+                    .filter(category => category && category.menuSection === 'sweet-hookah')
+                    .map(category => Number(category.order) || 0),
+                ) + 1;
+                categories.push(categoryToAdd);
+              });
+            }
+            if (storedVersion < 15) {
+              const sweetCategory = categories.find(category => category && (
+                category.id === 'sweet-desserts'
+                || (category.menuSection === 'sweet-hookah' && category.name && ['en', 'ar', 'bad', 'tr'].some(language => (
+                  category.name[language] === defaultData.categories.find(item => item.id === 'sweet-desserts').name[language]
+                )))
+              ));
+              if (!sweetCategory) {
+                categories.push(structuredClone(defaultData.categories.find(category => category.id === 'sweet-desserts')));
+              } else {
+                sweetCategory.name = structuredClone(defaultData.categories.find(category => category.id === 'sweet-desserts').name);
+                sweetCategory.menuSection = 'sweet-hookah';
+                sweetCategory.icon = 'fa-solid fa-cake-candles';
+                sweetCategory.order = 1;
+              }
+
+              const hookahCategory = categories.find(category => category && category.id === 'sweet-hookah');
+              if (hookahCategory) {
+                hookahCategory.name = structuredClone(defaultData.categories.find(category => category.id === 'sweet-hookah').name);
+                hookahCategory.menuSection = 'sweet-hookah';
+                hookahCategory.icon = 'fa-solid fa-smoking';
+                hookahCategory.order = 2;
+              }
+
+              const drinkCategory = categories.find(category => category && category.id === 'sweet-hookah-drinks');
+              if (drinkCategory) drinkCategory.order = 3;
+            }
+            if (storedVersion < 16) {
+              const hookahCategory = categories.find(category => category && category.id === 'sweet-hookah');
+              if (hookahCategory && hookahCategory.name && typeof hookahCategory.name === 'object') {
+                hookahCategory.name.bad = 'ناركيله';
+              }
+            }
             return {
-              version: 13,
+              version: 16,
               settings: { ...defaultData.settings, ...(parsed.settings || {}) },
               categories,
               products,
@@ -9197,7 +9370,7 @@
               await writeItems('products');
               await writeItems('categories');
               const metadata = {
-                version: 13,
+                version: 16,
                 storageFormat: 2,
                 settings: payload.settings || {},
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -9497,15 +9670,24 @@
           document.getElementById('footerHours').textContent = state.data.settings.hours || 'Mon–Sun · 10:00 AM – 11:30 PM';
         };
 
-        const getCategoryFromRoute = () => {
+        const getCategoryMenuSection = category => category && category.menuSection === 'sweet-hookah' ? 'sweet-hookah' : 'main';
+        const getMenuSectionLabel = section => translate(section === 'sweet-hookah' ? 'landingSweetHookah' : 'landingMenuLabel');
+        const getMenuSectionRoute = section => section === 'sweet-hookah' ? '#menu/section/sweet-hookah' : '#menu';
+
+        const getMenuRouteState = () => {
+          if (window.location.hash === '#menu/section/sweet-hookah') {
+            return { menuSection: 'sweet-hookah', category: 'all' };
+          }
           const match = window.location.hash.match(/^#menu\/(.+)$/);
-          if (!match) return 'all';
+          if (!match) return { menuSection: 'main', category: 'all' };
           try {
             const categoryId = decodeURIComponent(match[1]);
             const category = state.data.categories.find(item => item.id === categoryId && item.visible !== false);
-            return category ? category.id : 'all';
+            return category
+              ? { menuSection: getCategoryMenuSection(category), category: category.id }
+              : { menuSection: 'main', category: 'all' };
           } catch (error) {
-            return 'all';
+            return { menuSection: 'main', category: 'all' };
           }
         };
 
@@ -9537,7 +9719,7 @@
         };
 
         const getVisibleMenuCategories = () => state.data.categories
-          .filter(category => category.visible !== false)
+          .filter(category => category.visible !== false && getCategoryMenuSection(category) === state.selectedMenuSection)
           .sort((a, b) => (a.order || 0) - (b.order || 0));
 
         const updateMenuViewControls = () => {
@@ -9659,7 +9841,7 @@
         const animateCategoryRoute = (fromCategory, toCategory) => {
           if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || fromCategory === toCategory) return;
           const categories = [...state.data.categories]
-            .filter(category => category.visible !== false)
+            .filter(category => category.visible !== false && getCategoryMenuSection(category) === state.selectedMenuSection)
             .sort((a, b) => (a.order || 0) - (b.order || 0));
           let enterX = toCategory === 'all' ? -24 : 24;
           if (fromCategory !== 'all' && toCategory !== 'all') {
@@ -9746,7 +9928,9 @@
           const loginModal = bootstrap.Modal.getInstance(document.getElementById('adminLoginModal'));
           if (loginModal) loginModal.hide();
           const previousCategory = state.selectedCategory;
-          state.selectedCategory = getCategoryFromRoute();
+          const routeState = getMenuRouteState();
+          state.selectedMenuSection = routeState.menuSection;
+          state.selectedCategory = routeState.category;
           renderMenu();
           animateCategoryRoute(previousCategory, state.selectedCategory);
           if (!landingIntroOpen && state.selectedCategory !== 'all') {
@@ -9773,7 +9957,7 @@
             const name = getCategoryName(cat);
             return { cat, count, name, icon: getCategoryIcon(cat) };
           });
-          const signature = JSON.stringify(categoryDetails.map(({ cat, count, name, icon }) => [cat.id, count, name, icon]));
+          const signature = JSON.stringify([state.selectedMenuSection, categoryDetails.map(({ cat, count, name, icon }) => [cat.id, count, name, icon])]);
           if (signature !== categoryFilterSignature) {
             categoryFilters.innerHTML = categoryDetails.map(({ cat, count, name, icon }) => {
             return `
@@ -9795,7 +9979,7 @@
               button.addEventListener('click', () => {
                 const categoryId = decodeURIComponent(button.dataset.filter);
                 const nextRoute = state.selectedCategory === categoryId
-                  ? '#menu'
+                  ? getMenuSectionRoute(state.selectedMenuSection)
                   : `#menu/${encodeURIComponent(categoryId)}`;
                 if (window.location.hash === nextRoute) return;
                 button.classList.add('is-selecting');
@@ -9824,7 +10008,11 @@
 
         const getFilteredProducts = () => {
           const searchTerm = state.searchQuery.trim().toLowerCase();
-          let products = [...state.data.products].filter(item => item.available !== false);
+          let products = [...state.data.products].filter(item => {
+            if (item.available === false) return false;
+            const category = state.data.categories.find(cat => cat.id === item.categoryId);
+            return getCategoryMenuSection(category) === state.selectedMenuSection;
+          });
           if (state.selectedCategory !== 'all') {
             products = products.filter(item => item.categoryId === state.selectedCategory);
           }
@@ -9861,7 +10049,11 @@
             menuRenderFrame = 0;
           }
           renderCategoryFilters();
-          const selectedCategory = state.data.categories.find(category => category.id === state.selectedCategory && category.visible !== false);
+          const selectedCategory = state.data.categories.find(category => (
+            category.id === state.selectedCategory
+            && category.visible !== false
+            && getCategoryMenuSection(category) === state.selectedMenuSection
+          ));
           if (state.selectedCategory !== 'all' && !selectedCategory) {
             state.selectedCategory = 'all';
           }
@@ -10108,12 +10300,12 @@
         const setupLandingPage = () => {
           const overlay = document.getElementById('landingOverlay');
           const menuBtn = document.getElementById('landingMenuBtn');
+          const sweetHookahBtn = document.getElementById('landingSweetHookahBtn');
           const langBtn = document.getElementById('landingLangBtn');
           const landingHeader = langBtn.closest('.landing-header');
           const languageMenu = document.getElementById('landingLanguageMenu');
           const languageOptions = [...languageMenu.querySelectorAll('.landing-language-option')];
           const cafeLogo = document.getElementById('cafeLogo');
-          const menuIcon = menuBtn.querySelector('.landing-menu-icon');
           let isOpeningMenu = false;
 
           const showLogoFallback = () => {
@@ -10131,13 +10323,14 @@
           // A #menu URL can scroll the page behind the fixed cave intro.
           window.scrollTo(0, 0);
 
-          // Menu button - navigate to menu
-          menuBtn.addEventListener('click', () => {
+          const openMenuSection = (button, section) => {
             if (isOpeningMenu) return;
             isOpeningMenu = true;
             menuBtn.disabled = true;
+            sweetHookahBtn.disabled = true;
             overlay.classList.add('is-leaving');
             const exitDirection = state.lang === 'en' ? 1 : -1;
+            const menuIcon = button.querySelector('.landing-menu-icon');
             menuIcon.style.setProperty('--landing-menu-exit-x', `${exitDirection * 78}px`);
             menuIcon.classList.add('is-sliding');
             const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -10148,15 +10341,14 @@
                 document.body.classList.add('menu-arriving');
                 window.setTimeout(() => document.body.classList.remove('menu-arriving'), 1200);
               }
-              if (window.location.hash !== '#menu') {
-                window.history.pushState(null, '', '#menu');
-              }
-              document.getElementById('menu').scrollIntoView({
-                behavior: reducedMotion ? 'instant' : 'smooth',
-                block: 'start',
-              });
+              const route = getMenuSectionRoute(section);
+              if (window.location.hash === route) renderApplicationRoute();
+              else navigateMenuRoute(route);
             }, animationDelay);
-          });
+          };
+
+          menuBtn.addEventListener('click', () => openMenuSection(menuBtn, 'main'));
+          sweetHookahBtn.addEventListener('click', () => openMenuSection(sweetHookahBtn, 'sweet-hookah'));
 
           const setLandingLanguageMenuOpen = open => {
             landingHeader.classList.toggle('is-language-open', open);
@@ -10203,10 +10395,34 @@
               const selected = option.dataset.language === state.lang;
               option.setAttribute('aria-selected', String(selected));
             });
+            const backButton = document.getElementById('backToMenuSelection');
+            backButton.setAttribute('aria-label', t('backToMenuSelection'));
+            backButton.title = t('backToMenuSelection');
             document.getElementById('landingMenuLabel').textContent = t('landingMenuLabel');
+            document.getElementById('landingSweetHookahLabel').textContent = t('landingSweetHookah');
             document.getElementById('landingInstagram').querySelector('span').textContent = t('landingInstagram');
             document.getElementById('landingLocation').querySelector('span').textContent = t('landingLocation');
             document.getElementById('landingTikTok').querySelector('span').textContent = t('landingTikTok');
+          };
+
+          window.showLandingSelector = () => {
+            isOpeningMenu = false;
+            menuBtn.disabled = false;
+            sweetHookahBtn.disabled = false;
+            [menuBtn, sweetHookahBtn].forEach(button => {
+              const icon = button.querySelector('.landing-menu-icon');
+              icon.classList.remove('is-sliding');
+              icon.style.removeProperty('--landing-menu-exit-x');
+            });
+            overlay.classList.remove('hidden', 'is-leaving');
+            document.body.classList.remove('menu-arriving');
+            document.body.classList.add('cinema-landing');
+            window.scrollTo(0, 0);
+            if (window.resetLandingCinema) {
+              window.resetLandingCinema();
+            } else {
+              overlay.scrollTop = 0;
+            }
           };
 
           window.updateLandingContent();
@@ -10217,7 +10433,7 @@
           categorySelect.innerHTML = state.data.categories
             .filter(cat => cat.visible !== false)
             .sort((a, b) => (a.order || 0) - (b.order || 0))
-            .map(cat => `<option value="${cat.id}">${getCategoryName(cat)}</option>`)
+            .map(cat => `<option value="${cat.id}">${getMenuSectionLabel(getCategoryMenuSection(cat))} · ${getCategoryName(cat)}</option>`)
             .join('');
         };
 
@@ -10264,6 +10480,7 @@
             return `
             <tr>
               <td>${getCategoryName(category)}</td>
+              <td>${getMenuSectionLabel(getCategoryMenuSection(category))}</td>
               <td><span class="category-row-icon" title="${icon}"><i class="${icon}" aria-hidden="true"></i></span></td>
               <td>${category.order || 1}</td>
               <td>${category.visible === false ? '<span class="badge badge-unavailable">Hidden</span>' : '<span class="badge badge-popular">Visible</span>'}</td>
@@ -10474,6 +10691,7 @@
         const resetCategoryForm = () => {
           document.getElementById('categoryForm').reset();
           document.getElementById('categoryId').value = '';
+          document.getElementById('categoryMenuSection').value = 'main';
           document.getElementById('categoryIcon').value = 'fa-solid fa-bowl-food';
           updateCategoryIconPicker();
           document.getElementById('categoryVisible').checked = true;
@@ -10494,6 +10712,7 @@
           document.getElementById('categoryNameAr').value = getLocalizedValue(category.name, 'ar');
           document.getElementById('categoryNameBad').value = getLocalizedValue(category.name, 'bad');
           document.getElementById('categoryNameTr').value = getLocalizedValue(category.name, 'tr');
+          document.getElementById('categoryMenuSection').value = getCategoryMenuSection(category);
           document.getElementById('categoryIcon').value = category.icon || 'fa-solid fa-bowl-food';
           updateCategoryIconPicker();
           document.getElementById('categoryOrder').value = category.order || 1;
@@ -10802,21 +11021,26 @@
         };
 
         const deleteCategory = categoryId => {
+          const category = state.data.categories.find(item => item.id === categoryId);
           const productsInCategory = state.data.products.filter(item => item.categoryId === categoryId);
           if (productsInCategory.length) {
+            const fallbackCategory = state.data.categories
+              .filter(item => item.id !== categoryId && getCategoryMenuSection(item) === getCategoryMenuSection(category))
+              .sort((a, b) => Number(b.id === 'mains') - Number(a.id === 'mains') || (a.order || 0) - (b.order || 0))[0];
             Swal.fire({
               title: 'Category contains products',
               text: 'Choose how to handle the products inside this category before deleting it.',
               icon: 'question',
               showCancelButton: true,
+              showConfirmButton: Boolean(fallbackCategory),
+              confirmButtonText: fallbackCategory ? `Move items to ${getCategoryName(fallbackCategory)}` : undefined,
               showDenyButton: true,
-              confirmButtonText: 'Move items to Others',
               denyButtonText: 'Delete category and products',
               cancelButtonText: 'Cancel',
             }).then(result => {
               if (result.isDismissed || (!result.isConfirmed && !result.isDenied)) return;
               if (result.isConfirmed) {
-                state.data.products = state.data.products.map(product => product.categoryId === categoryId ? { ...product, categoryId: 'mains' } : product);
+                state.data.products = state.data.products.map(product => product.categoryId === categoryId ? { ...product, categoryId: fallbackCategory.id } : product);
               }
               if (result.isDenied) {
                 state.data.products = state.data.products.filter(item => item.categoryId !== categoryId);
@@ -10898,6 +11122,7 @@
           const id = document.getElementById('categoryId').value || `cat-${Date.now()}`;
           const payload = {
             id,
+            menuSection: document.getElementById('categoryMenuSection').value === 'sweet-hookah' ? 'sweet-hookah' : 'main',
             icon: document.getElementById('categoryIcon').value.trim() || 'fa-solid fa-bowl-food',
             visible: document.getElementById('categoryVisible').checked,
             order: Number(document.getElementById('categoryOrder').value || 1),
@@ -11198,8 +11423,12 @@
           setPhotoStatus('productImageInput', '');
           setPhotoStatus('categoryImageInput', '');
 
+          document.getElementById('backToMenuSelection').addEventListener('click', () => {
+            if (menuSearchToggle.getAttribute('aria-expanded') === 'true') menuSearchToggle.click();
+            window.showLandingSelector();
+          });
           document.getElementById('backToCategories').addEventListener('click', () => {
-            navigateMenuRoute('#menu');
+            navigateMenuRoute(getMenuSectionRoute(state.selectedMenuSection));
           });
           window.addEventListener('hashchange', handleMenuRouteChange);
           window.addEventListener('popstate', handleMenuRouteChange);
@@ -11360,7 +11589,9 @@
           document.getElementById('languageControlSlot').appendChild(document.getElementById('languageSelector'));
           setupLanguageControl();
           setupLandingPage();
-          state.selectedCategory = getCategoryFromRoute();
+          const initialRoute = getMenuRouteState();
+          state.selectedMenuSection = initialRoute.menuSection;
+          state.selectedCategory = initialRoute.category;
           applyLanguage({ renderMenuContent: false });
           attachEvents();
           renderApplicationRoute();
@@ -11896,40 +12127,6 @@
             updateUI(p);
           };
 
-          // reaching the end of the flight walks the guest straight into the menu,
-          // after a beat on the landing page so Menu / Instagram stay readable
-          const landingMenuBtn = document.getElementById('landingMenuBtn');
-          let menuTimer = 0;
-          let menuOpened = false;
-          const cancelAutoMenu = () => {
-            if (!menuTimer) return;
-            window.clearTimeout(menuTimer);
-            menuTimer = 0;
-          };
-          const maybeOpenMenu = () => {
-            if (menuOpened) return;
-            const atEnd = targetP >= 0.985 && currentP >= 0.985;
-            if (atEnd) {
-              if (!menuTimer) {
-                menuTimer = window.setTimeout(() => {
-                  menuTimer = 0;
-                  if (menuOpened || currentP < 0.96) return;
-                  if (!landingMenuBtn || landingMenuBtn.disabled) return;
-                  menuOpened = true;
-                  landingMenuBtn.click();
-                }, 2400);
-              }
-            } else {
-              cancelAutoMenu();
-            }
-          };
-
-          // if the guest starts using the landing page (Instagram, language, Menu),
-          // stop the automatic hand-off so they keep the choice
-          ['pointerdown', 'keydown', 'focusin'].forEach(type => {
-            ui.addEventListener(type, cancelAutoMenu);
-          });
-
           const frame = time => {
             raf = 0;
             const dt = Math.min(0.05, (time - (lastTime || time)) / 1000);
@@ -11938,7 +12135,6 @@
             currentP += (targetP - currentP) * k;
             if (Math.abs(targetP - currentP) < 0.0005) currentP = targetP;
             applyAll(currentP);
-            maybeOpenMenu();
             if (Math.abs(targetP - currentP) > 0.0005 && !document.hidden) {
               raf = window.requestAnimationFrame(frame);
             }
@@ -12005,6 +12201,15 @@
             }
           });
           observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+
+          window.resetLandingCinema = () => {
+            observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+            fitViewport(false);
+            overlay.scrollTop = 0;
+            readScroll();
+            lastTime = 0;
+            kick();
+          };
 
           // Land at the mouth of the cave every time, then reveal the WebGL layer.
           fitViewport(true);
