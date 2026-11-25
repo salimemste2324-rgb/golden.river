@@ -7795,7 +7795,7 @@
         };
 
         const defaultData = {
-          version: 16,
+          version: 17,
           settings: {
             restaurantName: 'Golden River',
             logo: 'Golden River',
@@ -7805,7 +7805,7 @@
             instagram: '@zakhobistro',
             facebook: '/zakhobistro',
             currency: 'IQD',
-            defaultLanguage: 'en',
+            defaultLanguage: 'ar',
             fallbackLanguage: 'en',
           },
           categories: [
@@ -8819,9 +8819,13 @@
                 hookahCategory.name.bad = 'ناركيله';
               }
             }
+            const settings = { ...defaultData.settings, ...(parsed.settings || {}) };
+            if (storedVersion < 17 && settings.defaultLanguage === 'en') {
+              settings.defaultLanguage = 'ar';
+            }
             return {
-              version: 16,
-              settings: { ...defaultData.settings, ...(parsed.settings || {}) },
+              version: 17,
+              settings,
               categories,
               products,
             };
@@ -9370,7 +9374,7 @@
               await writeItems('products');
               await writeItems('categories');
               const metadata = {
-                version: 16,
+                version: 17,
                 storageFormat: 2,
                 settings: payload.settings || {},
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -9474,7 +9478,9 @@
 
         const readLanguage = () => {
           const saved = localStorage.getItem(STORAGE_KEYS.lang);
-          return saved && ['en', 'ar', 'bad', 'tr'].includes(saved) ? saved : 'en';
+          if (saved && ['en', 'ar', 'bad', 'tr'].includes(saved)) return saved;
+          const defaultLanguage = state.data.settings.defaultLanguage;
+          return ['en', 'ar', 'bad', 'tr'].includes(defaultLanguage) ? defaultLanguage : 'ar';
         };
 
         const writeLanguage = value => localStorage.setItem(STORAGE_KEYS.lang, value);
@@ -10430,11 +10436,18 @@
 
         const fillCategorySelect = () => {
           const categorySelect = document.getElementById('productCategory');
-          categorySelect.innerHTML = state.data.categories
+          const categories = state.data.categories
             .filter(cat => cat.visible !== false)
-            .sort((a, b) => (a.order || 0) - (b.order || 0))
-            .map(cat => `<option value="${cat.id}">${getMenuSectionLabel(getCategoryMenuSection(cat))} · ${getCategoryName(cat)}</option>`)
-            .join('');
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
+          categorySelect.innerHTML = ['main', 'sweet-hookah'].map(section => {
+            const options = categories
+              .filter(category => getCategoryMenuSection(category) === section)
+              .map(category => `<option value="${category.id}">${getCategoryName(category)}</option>`)
+              .join('');
+            return options
+              ? `<optgroup label="${getMenuSectionLabel(section)}">${options}</optgroup>`
+              : '';
+          }).join('');
         };
 
         const renderProductsTable = () => {
@@ -10733,7 +10746,7 @@
           document.getElementById('settingPhone').value = settings.phone || '+964 750 111 2233';
           document.getElementById('settingAddress').value = settings.address || 'Duhok Street, Zakho, Kurdistan Region';
           document.getElementById('settingHours').value = settings.hours || 'Mon–Sun · 10:00 AM – 11:30 PM';
-          document.getElementById('settingDefaultLanguage').value = settings.defaultLanguage || 'en';
+          document.getElementById('settingDefaultLanguage').value = settings.defaultLanguage || 'ar';
           document.getElementById('settingFallbackLanguage').value = settings.fallbackLanguage || 'en';
           document.getElementById('settingInstagram').value = settings.instagram || '@zakhobistro';
           document.getElementById('settingFacebook').value = settings.facebook || '/zakhobistro';
@@ -11160,7 +11173,7 @@
             phone: document.getElementById('settingPhone').value || '+964 750 111 2233',
             address: document.getElementById('settingAddress').value || 'Duhok Street, Zakho, Kurdistan Region',
             hours: document.getElementById('settingHours').value || 'Mon–Sun · 10:00 AM – 11:30 PM',
-            defaultLanguage: document.getElementById('settingDefaultLanguage').value || 'en',
+            defaultLanguage: document.getElementById('settingDefaultLanguage').value || 'ar',
             fallbackLanguage: document.getElementById('settingFallbackLanguage').value || 'en',
             instagram: document.getElementById('settingInstagram').value || '@zakhobistro',
             facebook: document.getElementById('settingFacebook').value || '/zakhobistro',
