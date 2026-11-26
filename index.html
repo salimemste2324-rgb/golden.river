@@ -5994,6 +5994,28 @@
         color: var(--err);
       }
 
+      body.admin-mode .admin-product-filter {
+        max-width: 340px;
+        margin: 0 0 16px;
+      }
+
+      body.admin-mode .admin-product-price-control {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 132px;
+      }
+
+      body.admin-mode .admin-product-price-input {
+        width: 104px;
+        min-height: 36px;
+        padding: 6px 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel-strong);
+        color: var(--text);
+      }
+
       /* status chips inside the admin tables — the customer menu keeps its own colours */
       body.admin-mode .table-badges .badge {
         border: 1px solid transparent;
@@ -7463,6 +7485,12 @@
 
               <div class="form-card">
                 <h4 class="mb-3" data-i18n="productListTitle">Current menu</h4>
+                <div class="admin-product-filter form-field">
+                  <label for="adminProductCategoryFilter" data-i18n="filterProductsByCategory">Filter by category</label>
+                  <select id="adminProductCategoryFilter">
+                    <option value="all" data-i18n="allProductCategories">All categories</option>
+                  </select>
+                </div>
                 <div class="table-wrap">
                   <table>
                     <thead>
@@ -7934,6 +7962,7 @@
           activeTab: 'overview',
           productFormMode: 'add',
           categoryFormMode: 'add',
+          adminProductCategoryFilter: 'all',
           productImageData: '',
           categoryImageData: '',
           charts: {},
@@ -8006,6 +8035,11 @@
             chartAvailabilityTitle: 'Availability',
             productsHeading: 'Product management',
             productsSubtext: 'Create, update, and remove dishes',
+            filterProductsByCategory: 'Filter by category',
+            allProductCategories: 'All categories',
+            noProductsInCategory: 'No products in this category.',
+            editPriceAria: 'Price in IQD',
+            savePrice: 'Save price',
             productFormAddTitle: 'Add product',
             productFormEditTitle: 'Edit product',
             productNameEn: 'Name (English)',
@@ -8184,6 +8218,11 @@
             chartAvailabilityTitle: 'التوفر',
             productsHeading: 'إدارة المنتجات',
             productsSubtext: 'أنشئ المنتجات وقم بتعديلها أو حذفها',
+            filterProductsByCategory: 'تصفية حسب الفئة',
+            allProductCategories: 'كل الفئات',
+            noProductsInCategory: 'لا توجد منتجات في هذه الفئة.',
+            editPriceAria: 'السعر بالدينار',
+            savePrice: 'حفظ السعر',
             productFormAddTitle: 'إضافة منتج',
             productFormEditTitle: 'تعديل المنتج',
             productNameEn: 'الاسم (الإنجليزية)',
@@ -8356,6 +8395,11 @@
             chartAvailabilityTitle: 'بەردەستیبوون',
             productsHeading: 'ڕێڤەبرنا خوارن',
             productsSubtext: 'آفراندن، نووکرنا و سڕنا خوارن',
+            filterProductsByCategory: 'بەپێی بەشێ فلتەر بکە',
+            allProductCategories: 'هەمی بەش',
+            noProductsInCategory: 'ل ڤێ بەشێدا خوارن نینە.',
+            editPriceAria: 'بها ب دینار',
+            savePrice: 'پاشکەفتکرنا بها',
             productFormAddTitle: 'زێدەکرنا خوارن',
             productFormEditTitle: 'دستکاریکرنا خوارن',
             productNameEn: 'ناڤ (ئینگلیزی)',
@@ -8528,6 +8572,11 @@
             chartAvailabilityTitle: 'Müsaitlik',
             productsHeading: 'Ürün yönetimi',
             productsSubtext: 'Yemek oluşturun, güncelleyin ve kaldırın',
+            filterProductsByCategory: 'Kategoriye göre filtrele',
+            allProductCategories: 'Tüm kategoriler',
+            noProductsInCategory: 'Bu kategoride ürün yok.',
+            editPriceAria: 'IQD fiyatı',
+            savePrice: 'Fiyatı kaydet',
             productFormAddTitle: 'Ürün ekle',
             productFormEditTitle: 'Ürünü düzenle',
             productNameEn: 'Ad (İngilizce)',
@@ -10450,9 +10499,72 @@
           }).join('');
         };
 
+        const fillProductTableCategoryFilter = () => {
+          const filter = document.getElementById('adminProductCategoryFilter');
+          const selectedCategory = state.adminProductCategoryFilter;
+          filter.replaceChildren();
+
+          const allOption = document.createElement('option');
+          allOption.value = 'all';
+          allOption.textContent = translate('allProductCategories');
+          filter.appendChild(allOption);
+
+          ['main', 'sweet-hookah'].forEach(section => {
+            const categories = state.data.categories
+              .filter(category => getCategoryMenuSection(category) === section)
+              .sort((a, b) => (a.order || 0) - (b.order || 0));
+            if (!categories.length) return;
+
+            const group = document.createElement('optgroup');
+            group.label = getMenuSectionLabel(section);
+            categories.forEach(category => {
+              const option = document.createElement('option');
+              option.value = category.id;
+              option.textContent = getCategoryName(category);
+              group.appendChild(option);
+            });
+            filter.appendChild(group);
+          });
+
+          state.adminProductCategoryFilter = selectedCategory === 'all'
+            || state.data.categories.some(category => String(category.id) === selectedCategory)
+            ? selectedCategory
+            : 'all';
+          filter.value = state.adminProductCategoryFilter;
+        };
+
+        const saveProductPrice = (productId, input) => {
+          const price = Number(input.value);
+          if (!Number.isFinite(price) || price <= 0) {
+            input.focus();
+            showToast('Invalid price', 'Enter a price greater than zero.', 'error');
+            return;
+          }
+
+          const product = state.data.products.find(item => String(item.id) === productId);
+          if (!product) {
+            showToast('Product not found', 'Refresh the menu and try again.', 'error');
+            return;
+          }
+
+          state.data.products = state.data.products.map(item => (
+            String(item.id) === productId ? { ...item, price } : item
+          ));
+          saveData();
+          renderMenu();
+          renderProductsTable();
+          renderOverviewStats();
+          showToast('Price saved', 'The product price was updated.', 'success');
+        };
+
         const renderProductsTable = () => {
           const body = document.getElementById('productTableBody');
-          body.innerHTML = state.data.products.map(product => {
+          fillProductTableCategoryFilter();
+          const products = state.data.products.filter(product => (
+            state.adminProductCategoryFilter === 'all'
+            || String(product.categoryId) === state.adminProductCategoryFilter
+          ));
+          body.innerHTML = products.length ? products.map(product => {
             const category = state.data.categories.find(cat => cat.id === product.categoryId);
             const name = getLocalizedValue(product.name, state.lang);
             return `
@@ -10460,7 +10572,12 @@
                 <td>${name}</td>
                 <td>${product.image ? `<img class="product-row-thumbnail" src="${product.image}" alt="${name}" loading="lazy" />` : '—'}</td>
                 <td>${category ? getCategoryName(category) : '-'}</td>
-                <td>${toCurrency(product.price)}</td>
+                <td>
+                  <div class="admin-product-price-control">
+                    <input class="admin-product-price-input" type="number" min="1" step="100" value="${Number(product.price) || 0}" aria-label="${translate('editPriceAria')}" />
+                    <button class="tiny-action" type="button" data-save-price="${product.id}" title="${translate('savePrice')}" aria-label="${translate('savePrice')}"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i></button>
+                  </div>
+                </td>
                 <td>
                   <div class="table-badges">
                     ${product.available ? '<span class="badge badge-popular">Available</span>' : '<span class="badge badge-unavailable">Hidden</span>'}
@@ -10474,13 +10591,23 @@
                 </td>
               </tr>
             `;
-          }).join('');
+          }).join('') : `<tr><td colspan="6">${translate('noProductsInCategory')}</td></tr>`;
 
           body.querySelectorAll('[data-edit-product]').forEach(button => {
             button.addEventListener('click', () => populateProductForm(button.dataset.editProduct));
           });
           body.querySelectorAll('[data-delete-product]').forEach(button => {
             button.addEventListener('click', () => deleteProduct(button.dataset.deleteProduct));
+          });
+          body.querySelectorAll('[data-save-price]').forEach(button => {
+            const input = button.closest('tr').querySelector('.admin-product-price-input');
+            button.addEventListener('click', () => saveProductPrice(button.dataset.savePrice, input));
+            input.addEventListener('keydown', event => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                button.click();
+              }
+            });
           });
         };
 
@@ -11399,6 +11526,10 @@
           document.getElementById('resetDemoDataBtn').addEventListener('click', clearMenuData);
           document.getElementById('cancelProductEditBtn').addEventListener('click', resetProductForm);
           document.getElementById('cancelCategoryEditBtn').addEventListener('click', resetCategoryForm);
+          document.getElementById('adminProductCategoryFilter').addEventListener('change', event => {
+            state.adminProductCategoryFilter = event.target.value;
+            renderProductsTable();
+          });
           document.getElementById('productForm').addEventListener('submit', handleProductSubmit);
           document.getElementById('categoryForm').addEventListener('submit', handleCategorySubmit);
           document.getElementById('categoryIcon').addEventListener('input', () => updateCategoryIconPicker(true));
